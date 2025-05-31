@@ -5,8 +5,8 @@ class CourseManager:
     def __init__(self, root):
         self.root = root
         self.root.title("Gestion des Cours")
-        self.root.geometry("600x400")
-        self.root.configure(bg="#f5f5f5")
+        self.root.geometry("500x320")
+        self.root.configure(bg="#B3D9FF")  # Bleu ciel clair
 
         self.courses = []
         self.course_id = 1
@@ -15,52 +15,88 @@ class CourseManager:
 
     def setup_ui(self):
         # Titre
-        title = tk.Label(self.root, text="Gestion des Cours", font=("Helvetica", 18, "bold"), bg="#f5f5f5", fg="#333")
-        title.pack(pady=10)
+        title = tk.Label(
+            self.root, 
+            text="Gestion des Cours", 
+            font=("Helvetica", 20, "bold"), 
+            bg="#B3D9FF", 
+            fg="#0A3D62"
+        )
+        title.pack(pady=15)
 
         # Zone formulaire
-        form_frame = tk.Frame(self.root, bg="#f5f5f5")
+        form_frame = tk.Frame(self.root, bg="#B3D9FF")
         form_frame.pack(pady=5)
 
-        tk.Label(form_frame, text="Nom du cours :", bg="#f5f5f5").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        self.entry_nom = ttk.Entry(form_frame, width=30)
-        self.entry_nom.grid(row=0, column=1, padx=5, pady=5)
+        tk.Label(form_frame, text="Nom du cours * :", bg="#B3D9FF", fg="#0A3D62", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=10, sticky="e")
+        self.entry_nom = ttk.Entry(form_frame, width=35)
+        self.entry_nom.grid(row=0, column=1, padx=5, pady=10)
 
-        tk.Label(form_frame, text="Enseignant :", bg="#f5f5f5").grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        self.entry_ens = ttk.Entry(form_frame, width=30)
-        self.entry_ens.grid(row=1, column=1, padx=5, pady=5)
+        tk.Label(form_frame, text="Enseignant * :", bg="#B3D9FF", fg="#0A3D62", font=("Arial", 12)).grid(row=1, column=0, padx=5, pady=10, sticky="e")
+        self.entry_ens = ttk.Entry(form_frame, width=35)
+        self.entry_ens.grid(row=1, column=1, padx=5, pady=10)
 
         btn_ajouter = ttk.Button(self.root, text="Ajouter le cours", command=self.ajouter_cours)
-        btn_ajouter.pack(pady=10)
+        btn_ajouter.pack(pady=12)
 
-        # Tableau des cours
-        self.tree = ttk.Treeview(self.root, columns=("ID", "Nom", "Enseignant"), show="headings", height=8)
-        self.tree.heading("ID", text="ID")
-        self.tree.heading("Nom", text="Nom du cours")
-        self.tree.heading("Enseignant", text="Enseignant")
-        self.tree.column("ID", width=50, anchor="center")
-        self.tree.column("Nom", width=200)
-        self.tree.column("Enseignant", width=200)
-        self.tree.pack(pady=10)
+        btn_afficher = ttk.Button(self.root, text="Afficher les cours disponibles", command=self.afficher_cours)
+        btn_afficher.pack()
 
-        # Scrollbar
-        scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscroll=scrollbar.set)
-        scrollbar.place(x=575, y=180, height=180)
+        # Indication champs obligatoires
+        mandatory_label = tk.Label(self.root, text="* Champs obligatoires", bg="#B3D9FF", fg="#D63447", font=("Arial", 10, "italic"))
+        mandatory_label.pack(pady=5)
 
     def ajouter_cours(self):
         nom = self.entry_nom.get().strip()
         enseignant = self.entry_ens.get().strip()
 
         if not nom or not enseignant:
-            messagebox.showwarning("Champs requis", "Veuillez remplir tous les champs.")
+            messagebox.showwarning("Champs requis", "Veuillez remplir tous les champs obligatoires.")
             return
 
-        self.tree.insert("", "end", values=(self.course_id, nom, enseignant))
+        self.courses.append((self.course_id, nom, enseignant))
         self.course_id += 1
 
         self.entry_nom.delete(0, tk.END)
         self.entry_ens.delete(0, tk.END)
+
+        messagebox.showinfo("Succès", "Le cours a été ajouté avec succès.")
+
+    def afficher_cours(self):
+        if not self.courses:
+            messagebox.showinfo("Info", "Aucun cours disponible pour le moment.")
+            return
+
+        popup = tk.Toplevel(self.root)
+        popup.title("Cours Disponibles")
+        popup.geometry("550x350")
+        popup.configure(bg="#B3D9FF")
+
+        # Label titre popup
+        label = tk.Label(popup, text="Liste des Cours Disponibles", font=("Helvetica", 16, "bold"), bg="#B3D9FF", fg="#0A3D62")
+        label.pack(pady=10)
+
+        # Table
+        tree = ttk.Treeview(popup, columns=("ID", "Nom", "Enseignant"), show="headings", height=12)
+        tree.heading("ID", text="ID")
+        tree.heading("Nom", text="Nom du cours")
+        tree.heading("Enseignant", text="Enseignant")
+        tree.column("ID", width=60, anchor="center")
+        tree.column("Nom", width=220)
+        tree.column("Enseignant", width=220)
+        tree.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+
+        # Style alterné pour lignes (zebra)
+        tree.tag_configure('oddrow', background='#E6F0FF')
+        tree.tag_configure('evenrow', background='white')
+
+        for idx, course in enumerate(self.courses):
+            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+            tree.insert("", "end", values=course, tags=(tag,))
+
+        # Bouton retour
+        btn_retour = ttk.Button(popup, text="Retour", command=popup.destroy)
+        btn_retour.pack(pady=10)
 
 if __name__ == "__main__":
     root = tk.Tk()
