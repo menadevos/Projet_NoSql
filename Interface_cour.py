@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import json
-import os
+from cassandra.cluster import Cluster
+from cassandra.auth import PlainTextAuthProvider
+from uuid import uuid1
 
 class CourseManager:
     def __init__(self, root):
@@ -10,12 +11,33 @@ class CourseManager:
         self.root.geometry("500x320")
         self.root.configure(bg="#B3D9FF")
 
-        self.courses = []
-        self.course_id = 1
-
-        self.load_courses()  # Charger les cours depuis fichier
-
+        # Connexion à Cassandra
+        self.cluster = Cluster(['127.0.0.1'])  # Adapter à votre configuration
+        self.session = self.cluster.connect()
+        
+        # Créer le keyspace et la table si inexistants
+        self.setup_database()
+        
         self.setup_ui()
+
+    def setup_database(self):
+        # Création du keyspace (si non existant)
+        self.session.execute("""
+            CREATE KEYSPACE IF NOT EXISTS gestion_etudiants 
+            WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
+        """)
+        
+        # Utilisation du keyspace
+        self.session.set_keyspace('gestion_etudiants')
+        
+        # Création de la table (si non existante)
+        self.session.execute("""
+            CREATE TABLE IF NOT EXISTS cours (
+                id UUID PRIMARY KEY,
+                nom TEXT,
+                enseignant TEXT
+            )
+        """)
 
     def setup_ui(self):
         title = tk.Label(self.root, text="Gestion des Cours", font=("Helvetica", 20, "bold"), bg="#B3D9FF", fg="#0A3D62")
@@ -49,63 +71,63 @@ class CourseManager:
             messagebox.showwarning("Champs requis", "Veuillez remplir tous les champs obligatoires.")
             return
 
-        # Ajouter dans la liste
-        self.courses.append((self.course_id, nom, enseignant))
-        self.course_id += 1
+        try:
+            # Insertion dans Cassandra avec un UUID généré
+            query = """
+                INSERT INTO cours (id, nom, enseignant)
+                VALUES (%s, %s, %s)
+            """
+            self.session.execute(query, (uuid1(), nom, enseignant))
 
-        # Sauvegarder dans fichier JSON
-        self.save_courses()
-
-        self.entry_nom.delete(0, tk.END)
-        self.entry_ens.delete(0, tk.END)
-
-        messagebox.showinfo("Succès", "Le cours a été ajouté avec succès.")
+            self.entry_nom.delete(0, tk.END)
+            self.entry_ens.delete(0, tk.END)
+            messagebox.showinfo("Succès", "Le cours a été ajouté avec succès.")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de l'ajout du cours: {str(e)}")
 
     def afficher_cours(self):
-        if not self.courses:
-            messagebox.showinfo("Info", "Aucun cours disponible pour le moment.")
-            return
+        try:
+            query = "SELECT id, nom, enseignant FROM cours"
+            rows = list(self.session.execute(query))
 
-        popup = tk.Toplevel(self.root)
-        popup.title("Cours Disponibles")
-        popup.geometry("550x350")
-        popup.configure(bg="#B3D9FF")
+            if not rows:
+                messagebox.showinfo("Info", "Aucun cours disponible pour le moment.")
+                return
 
-        label = tk.Label(popup, text="Liste des Cours Disponibles", font=("Helvetica", 16, "bold"), bg="#B3D9FF", fg="#0A3D62")
-        label.pack(pady=10)
+            popup = tk.Toplevel(self.root)
+            popup.title("Cours Disponibles")
+            popup.geometry("550x350")
+            popup.configure(bg="#B3D9FF")
 
-        tree = ttk.Treeview(popup, columns=("ID", "Nom", "Enseignant"), show="headings", height=12)
-        tree.heading("ID", text="ID")
-        tree.heading("Nom", text="Nom du cours")
-        tree.heading("Enseignant", text="Enseignant")
-        tree.column("ID", width=60, anchor="center")
-        tree.column("Nom", width=220)
-        tree.column("Enseignant", width=220)
-        tree.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+            label = tk.Label(popup, text="Liste des Cours Disponibles", font=("Helvetica", 16, "bold"), bg="#B3D9FF", fg="#0A3D62")
+            label.pack(pady=10)
 
-        tree.tag_configure('oddrow', background='#E6F0FF')
-        tree.tag_configure('evenrow', background='white')
+            tree = ttk.Treeview(popup, columns=("ID", "Nom", "Enseignant"), show="headings", height=12)
+            tree.heading("ID", text="ID")
+            tree.heading("Nom", text="Nom du cours")
+            tree.heading("Enseignant", text="Enseignant")
+            tree.column("ID", width=120, anchor="center")
+            tree.column("Nom", width=180)
+            tree.column("Enseignant", width=180)
+            tree.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
 
-        for idx, course in enumerate(self.courses):
-            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
-            tree.insert("", "end", values=course, tags=(tag,))
+            tree.tag_configure('oddrow', background='#E6F0FF')
+            tree.tag_configure('evenrow', background='white')
 
-        btn_retour = ttk.Button(popup, text="Retour", command=popup.destroy)
-        btn_retour.pack(pady=10)
+            for idx, row in enumerate(rows):
+                tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                tree.insert("", "end", values=(str(row.id), row.nom, row.enseignant), tags=(tag,))
 
-    def save_courses(self):
-        # On convertit les tuples en liste pour JSON
-        with open("cours.json", "w", encoding="utf-8") as f:
-            json.dump([list(c) for c in self.courses], f, ensure_ascii=False, indent=4)
+            btn_retour = ttk.Button(popup, text="Retour", command=popup.destroy)
+            btn_retour.pack(pady=10)
 
-    def load_courses(self):
-        if os.path.exists("cours.json"):
-            with open("cours.json", "r", encoding="utf-8") as f:
-                data = json.load(f)
-                self.courses = [tuple(c) for c in data]
-                # Remettre à jour l'ID pour éviter les doublons
-                if self.courses:
-                    self.course_id = max(c[0] for c in self.courses) + 1
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la récupération des cours: {str(e)}")
+
+    def __del__(self):
+        # Fermeture de la connexion Cassandra lorsque l'application se ferme
+        if hasattr(self, 'cluster'):
+            self.cluster.shutdown()
 
 if __name__ == "__main__":
     root = tk.Tk()
