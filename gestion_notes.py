@@ -236,7 +236,7 @@ class GestionNotes:
         self.combo_cours['values'] = cours_values
     
     def ajouter_note(self):
-        """Ajouter une nouvelle note - VERSION CORRIGÉE"""
+        """Ajouter une nouvelle note"""
         try:
             # Validation des champs
             if not self.combo_etudiant.get() or not self.combo_cours.get():
@@ -313,12 +313,11 @@ class GestionNotes:
             VALUES (%s, %s, %s, %s)
             """
             
-            # Exécuter la requête avec les paramètres correctement formatés
             self.session.execute(insert_query, (
-                uuid.UUID(etudiant_id),  # UUID
-                uuid.UUID(cours_id),     # UUID  
-                annee,                   # int
-                note                     # float
+                uuid.UUID(etudiant_id),
+                uuid.UUID(cours_id),
+                annee,
+                note
             ))
             
             messagebox.showinfo("Succès", "Note ajoutée avec succès!")
@@ -326,7 +325,7 @@ class GestionNotes:
             
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de l'ajout: {str(e)}")
-            print(f"Erreur détaillée: {e}")  # Pour le débogage
+            print(f"Erreur détaillée: {e}")
     
     def effacer_champs_ajout(self):
         """Effacer les champs du formulaire d'ajout"""
@@ -337,7 +336,7 @@ class GestionNotes:
         self.entry_note.delete(0, tk.END)
     
     def afficher_notes_etudiant(self, event=None):
-        """Afficher les notes d'un étudiant sélectionné - VERSION CORRIGÉE"""
+        """Afficher les notes d'un étudiant sélectionné"""
         if not self.combo_etudiant_consult.get():
             return
         
@@ -358,8 +357,8 @@ class GestionNotes:
             if not etudiant_id:
                 return
             
-            # Requête simplifiée pour récupérer les notes
-            query = "SELECT cours_id, annee, note FROM notes WHERE etudiant_id = %s"
+            # Requête simplifiée pour récupérer les notes avec ALLOW FILTERING
+            query = "SELECT cours_id, annee, note FROM notes WHERE etudiant_id = %s ALLOW FILTERING"
             rows = self.session.execute(query, (uuid.UUID(etudiant_id),))
             
             # Pour chaque note, récupérer les infos du cours
@@ -518,7 +517,7 @@ class GestionNotes:
                  bg='#e74c3c', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
     
     def calculer_moyenne(self):
-        """Calculer et afficher la moyenne d'un étudiant - VERSION CORRIGÉE"""
+        """Calculer et afficher la moyenne d'un étudiant"""
         if not self.combo_etudiant_moyenne.get():
             messagebox.showwarning("Attention", "Veuillez sélectionner un étudiant")
             return
@@ -539,8 +538,8 @@ class GestionNotes:
             if not etudiant_id:
                 return
             
-            # Requête pour récupérer toutes les notes de l'étudiant
-            query = "SELECT note, annee, cours_id FROM notes WHERE etudiant_id = %s"
+            # Requête pour récupérer toutes les notes de l'étudiant avec ALLOW FILTERING
+            query = "SELECT note, annee, cours_id FROM notes WHERE etudiant_id = %s ALLOW FILTERING"
             rows = list(self.session.execute(query, (uuid.UUID(etudiant_id),)))
             
             if not rows:
