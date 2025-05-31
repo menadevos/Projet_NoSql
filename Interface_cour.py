@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from cassandra.cluster import Cluster
-from cassandra.auth import PlainTextAuthProvider
 from uuid import uuid1
 
 class CourseManager:
@@ -83,7 +82,7 @@ class CourseManager:
             self.entry_ens.delete(0, tk.END)
             messagebox.showinfo("Succès", "Le cours a été ajouté avec succès.")
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de l'ajout du cours: {str(e)}")
+            messagebox.showerror("Erreur", "Erreur lors de l'ajout du cours: " + str(e))
 
     def afficher_cours(self):
         try:
@@ -103,7 +102,7 @@ class CourseManager:
             label.pack(pady=10)
 
             tree = ttk.Treeview(popup, columns=("ID", "Nom", "Enseignant"), show="headings", height=12)
-            tree.heading("ID", text="ID")
+            tree.heading("ID", text="ID court")
             tree.heading("Nom", text="Nom du cours")
             tree.heading("Enseignant", text="Enseignant")
             tree.column("ID", width=120, anchor="center")
@@ -116,13 +115,14 @@ class CourseManager:
 
             for idx, row in enumerate(rows):
                 tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
-                tree.insert("", "end", values=(str(row.id), row.nom, row.enseignant), tags=(tag,))
+                short_id = str(row.id)[:8]  # Affiche uniquement les 8 premiers caractères de l'UUID
+                tree.insert("", "end", values=(short_id, row.nom, row.enseignant), tags=(tag,))
 
             btn_retour = ttk.Button(popup, text="Retour", command=popup.destroy)
             btn_retour.pack(pady=10)
 
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de la récupération des cours: {str(e)}")
+            messagebox.showerror("Erreur", "Erreur lors de la récupération des cours: " + str(e))
 
     def __del__(self):
         # Fermeture de la connexion Cassandra lorsque l'application se ferme
