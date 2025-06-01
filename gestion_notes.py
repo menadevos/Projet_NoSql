@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# gestion_notes_corrige.py
+# gestion_notes_elegant.py
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -12,15 +12,160 @@ class GestionNotes:
         self.session = self.get_session()
         self.root = tk.Tk()
         self.root.title("Gestion des Notes - Étudiants")
-        self.root.geometry("800x600")
-        self.root.configure(bg='#f0f0f0')
+        
+        # Taille réduite et centrée
+        self.root.geometry("1000x700")
+        self.root.configure(bg='#F8F6F0')  # Vanilla ice background
+        
+        # Centrer la fenêtre sur l'écran
+        self.center_window()
+        
+        # Palette de couleurs élégante
+        self.colors = {
+            'vanilla_ice': '#F8F6F0',      # Fond principal
+            'cosmic': '#2E1065',           # Bleu violet foncé
+            'provincial': '#16537e',       # Bleu-vert
+            'grape': '#7C3AED',           # Violet
+            'light_grape': '#A78BFA',     # Violet clair
+            'accent': '#F3F4F6',          # Gris très clair
+            'text_dark': '#1F2937',       # Texte foncé
+            'text_light': '#6B7280',      # Texte clair
+            'success': '#10B981',         # Vert succès
+            'warning': '#F59E0B',         # Orange warning
+            'danger': '#EF4444'           # Rouge danger
+        }
         
         # Variables pour stocker les données
         self.etudiants = []
         self.cours = []
         
+        self.setup_styles()
         self.setup_ui()
         self.charger_donnees()
+    
+    def center_window(self):
+        """Centrer la fenêtre sur l'écran"""
+        self.root.update_idletasks()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f'+{x}+{y}')
+    
+    def setup_styles(self):
+        """Configuration des styles personnalisés"""
+        style = ttk.Style()
+        style.theme_use('clam')
+        
+        # Style pour les notebooks
+        style.configure('Custom.TNotebook', 
+                       background=self.colors['vanilla_ice'],
+                       borderwidth=0)
+        style.configure('Custom.TNotebook.Tab',
+                       background=self.colors['accent'],
+                       foreground=self.colors['text_dark'],
+                       padding=[20, 10],
+                       font=('Segoe UI', 11, 'bold'))
+        style.map('Custom.TNotebook.Tab',
+                 background=[('selected', self.colors['cosmic']),
+                           ('active', self.colors['light_grape'])],
+                 foreground=[('selected', 'white'),
+                           ('active', 'white')])
+        
+        # Style pour les combobox
+        style.configure('Custom.TCombobox',
+                       fieldbackground='white',
+                       background=self.colors['provincial'],
+                       foreground=self.colors['text_dark'],
+                       borderwidth=2,
+                       relief='flat')
+        
+        # Style pour les treeview
+        style.configure('Custom.Treeview',
+                       background='white',
+                       foreground=self.colors['text_dark'],
+                       fieldbackground='white',
+                       borderwidth=0,
+                       font=('Segoe UI', 10))
+        style.configure('Custom.Treeview.Heading',
+                       background=self.colors['cosmic'],
+                       foreground='white',
+                       font=('Segoe UI', 11, 'bold'),
+                       relief='flat')
+    
+    def create_rounded_button(self, parent, text, command, bg_color, fg_color='white', 
+                            width=200, height=45, font_size=12):
+        """Créer un bouton arrondi élégant"""
+        button_frame = tk.Frame(parent, bg=parent['bg'], highlightthickness=0)
+        
+        canvas = tk.Canvas(button_frame, width=width, height=height, 
+                          highlightthickness=0, relief='flat', bd=0)
+        canvas.configure(bg=parent['bg'])
+        
+        # Créer le rectangle arrondi
+        def create_rounded_rect(x1, y1, x2, y2, radius=20):
+            points = []
+            for x, y in [(x1, y1 + radius), (x1, y1), (x1 + radius, y1),
+                        (x2 - radius, y1), (x2, y1), (x2, y1 + radius),
+                        (x2, y2 - radius), (x2, y2), (x2 - radius, y2),
+                        (x1 + radius, y2), (x1, y2), (x1, y2 - radius)]:
+                points.extend([x, y])
+            return canvas.create_polygon(points, smooth=True, fill=bg_color, outline='')
+        
+        rect = create_rounded_rect(2, 2, width-2, height-2, 22)
+        
+        # Ajouter le texte
+        text_item = canvas.create_text(width//2, height//2, text=text, 
+                                     fill=fg_color, font=('Segoe UI', font_size, 'bold'))
+        
+        canvas.pack()
+        
+        # Effets de survol
+        def on_enter(event):
+            canvas.itemconfig(rect, fill=self.lighten_color(bg_color))
+            canvas.configure(cursor='hand2')
+        
+        def on_leave(event):
+            canvas.itemconfig(rect, fill=bg_color)
+            canvas.configure(cursor='')
+        
+        def on_click(event):
+            command()
+        
+        canvas.bind('<Enter>', on_enter)
+        canvas.bind('<Leave>', on_leave)
+        canvas.bind('<Button-1>', on_click)
+        
+        return button_frame
+    
+    def lighten_color(self, color):
+        """Éclaircir une couleur hexadécimale"""
+        color = color.lstrip('#')
+        rgb = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+        lighter_rgb = tuple(min(255, int(c * 1.2)) for c in rgb)
+        return f"#{lighter_rgb[0]:02x}{lighter_rgb[1]:02x}{lighter_rgb[2]:02x}"
+    
+    def create_elegant_frame(self, parent, title=""):
+        """Créer un frame élégant avec ombre"""
+        # Frame principal avec ombre
+        shadow_frame = tk.Frame(parent, bg='#E5E7EB', relief='flat', bd=0)
+        shadow_frame.pack(fill='both', expand=True, padx=25, pady=25)
+        
+        # Frame de contenu
+        content_frame = tk.Frame(shadow_frame, bg='white', relief='flat', bd=0)
+        content_frame.pack(fill='both', expand=True, padx=3, pady=3)
+        
+        if title:
+            title_frame = tk.Frame(content_frame, bg=self.colors['cosmic'], height=80)
+            title_frame.pack(fill='x', pady=(0, 30))
+            title_frame.pack_propagate(False)
+            
+            title_label = tk.Label(title_frame, text=title,
+                                 font=('Segoe UI', 20, 'bold'),
+                                 fg='white', bg=self.colors['cosmic'])
+            title_label.pack(expand=True)
+        
+        return content_frame
     
     def get_session(self):
         """Connexion à Cassandra"""
@@ -34,133 +179,174 @@ class GestionNotes:
     
     def setup_ui(self):
         """Configuration de l'interface utilisateur"""
-        # Titre principal
-        title_frame = tk.Frame(self.root, bg='#2c3e50', height=60)
-        title_frame.pack(fill='x', pady=(0, 10))
-        title_frame.pack_propagate(False)
+        # En-tête principal avec dégradé
+        header_frame = tk.Frame(self.root, bg=self.colors['cosmic'], height=80)
+        header_frame.pack(fill='x', pady=(0, 20))
+        header_frame.pack_propagate(False)
         
-        title_label = tk.Label(title_frame, text="GESTION DES NOTES", 
-                              font=('Arial', 18, 'bold'), 
-                              fg='white', bg='#2c3e50')
+        # Titre principal avec style moderne
+        title_label = tk.Label(header_frame, text="🎓 GESTION DES NOTES ÉTUDIANTS",
+                              font=('Segoe UI', 22, 'bold'),
+                              fg='white', bg=self.colors['cosmic'])
         title_label.pack(expand=True)
         
-        # Notebook pour les onglets
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill='both', expand=True, padx=10, pady=5)
+        subtitle_label = tk.Label(header_frame, text="Système de gestion académique moderne",
+                                font=('Segoe UI', 11),
+                                fg=self.colors['light_grape'], bg=self.colors['cosmic'])
+        subtitle_label.pack()
+        
+        # Container principal
+        main_container = tk.Frame(self.root, bg=self.colors['vanilla_ice'])
+        main_container.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        # Notebook avec style personnalisé
+        self.notebook = ttk.Notebook(main_container, style='Custom.TNotebook')
+        self.notebook.pack(fill='both', expand=True)
         
         # Onglet 1: Ajouter une note
-        self.frame_ajouter = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_ajouter, text="Ajouter Note")
+        self.frame_ajouter = tk.Frame(self.notebook, bg=self.colors['vanilla_ice'])
+        self.notebook.add(self.frame_ajouter, text="✏️ Ajouter Note")
         self.setup_ajouter_note()
         
         # Onglet 2: Consulter les notes
-        self.frame_consulter = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_consulter, text="Consulter Notes")
+        self.frame_consulter = tk.Frame(self.notebook, bg=self.colors['vanilla_ice'])
+        self.notebook.add(self.frame_consulter, text="📋 Consulter Notes")
         self.setup_consulter_notes()
         
         # Onglet 3: Moyennes
-        self.frame_moyennes = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_moyennes, text="Moyennes")
+        self.frame_moyennes = tk.Frame(self.notebook, bg=self.colors['vanilla_ice'])
+        self.notebook.add(self.frame_moyennes, text="📊 Moyennes")
         self.setup_moyennes()
     
     def setup_ajouter_note(self):
         """Interface pour ajouter une note"""
-        # Frame principal
-        main_frame = tk.Frame(self.frame_ajouter, bg='white', relief='raised', bd=2)
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        main_frame = self.create_elegant_frame(self.frame_ajouter, "Ajouter une Nouvelle Note")
         
-        # Titre
-        tk.Label(main_frame, text="Ajouter une Note", 
-                font=('Arial', 16, 'bold'), bg='white', fg='#2c3e50').pack(pady=10)
+        # Container pour le formulaire
+        form_container = tk.Frame(main_frame, bg='white')
+        form_container.pack(expand=True, fill='both', padx=30, pady=20)
         
-        # Frame pour les champs
-        fields_frame = tk.Frame(main_frame, bg='white')
-        fields_frame.pack(pady=20)
+        # Grille pour les champs
+        fields_frame = tk.Frame(form_container, bg='white')
+        fields_frame.pack(expand=True)
         
-        # Sélection étudiant
-        tk.Label(fields_frame, text="Étudiant:", font=('Arial', 12), bg='white').grid(row=0, column=0, sticky='w', padx=5, pady=5)
-        self.combo_etudiant = ttk.Combobox(fields_frame, width=30, state='readonly')
-        self.combo_etudiant.grid(row=0, column=1, padx=5, pady=5)
+        # Style des labels
+        label_font = ('Segoe UI', 12, 'bold')
+        entry_font = ('Segoe UI', 11)
         
-        # Sélection cours
-        tk.Label(fields_frame, text="Cours:", font=('Arial', 12), bg='white').grid(row=1, column=0, sticky='w', padx=5, pady=5)
-        self.combo_cours = ttk.Combobox(fields_frame, width=30, state='readonly')
-        self.combo_cours.grid(row=1, column=1, padx=5, pady=5)
+        # Étudiant
+        tk.Label(fields_frame, text="👤 Étudiant:", font=label_font, 
+                bg='white', fg=self.colors['text_dark']).grid(row=0, column=0, sticky='w', 
+                                                             padx=15, pady=15)
+        self.combo_etudiant = ttk.Combobox(fields_frame, width=30, state='readonly',
+                                          style='Custom.TCombobox', font=entry_font)
+        self.combo_etudiant.grid(row=0, column=1, padx=15, pady=15, sticky='ew')
+        
+        # Cours
+        tk.Label(fields_frame, text="📚 Cours:", font=label_font,
+                bg='white', fg=self.colors['text_dark']).grid(row=1, column=0, sticky='w',
+                                                             padx=15, pady=15)
+        self.combo_cours = ttk.Combobox(fields_frame, width=30, state='readonly',
+                                       style='Custom.TCombobox', font=entry_font)
+        self.combo_cours.grid(row=1, column=1, padx=15, pady=15, sticky='ew')
         
         # Année
-        tk.Label(fields_frame, text="Année:", font=('Arial', 12), bg='white').grid(row=2, column=0, sticky='w', padx=5, pady=5)
-        self.entry_annee = tk.Entry(fields_frame, width=32, font=('Arial', 10))
+        tk.Label(fields_frame, text="📅 Année:", font=label_font,
+                bg='white', fg=self.colors['text_dark']).grid(row=2, column=0, sticky='w',
+                                                             padx=15, pady=15)
+        self.entry_annee = tk.Entry(fields_frame, width=32, font=entry_font,
+                                   relief='flat', bd=5, bg=self.colors['accent'])
         self.entry_annee.insert(0, str(datetime.now().year))
-        self.entry_annee.grid(row=2, column=1, padx=5, pady=5)
+        self.entry_annee.grid(row=2, column=1, padx=15, pady=15, sticky='ew')
         
         # Note
-        tk.Label(fields_frame, text="Note (0-20):", font=('Arial', 12), bg='white').grid(row=3, column=0, sticky='w', padx=5, pady=5)
-        self.entry_note = tk.Entry(fields_frame, width=32, font=('Arial', 10))
-        self.entry_note.grid(row=3, column=1, padx=5, pady=5)
+        tk.Label(fields_frame, text="🎯 Note (0-20):", font=label_font,
+                bg='white', fg=self.colors['text_dark']).grid(row=3, column=0, sticky='w',
+                                                             padx=15, pady=15)
+        self.entry_note = tk.Entry(fields_frame, width=32, font=entry_font,
+                                  relief='flat', bd=5, bg=self.colors['accent'])
+        self.entry_note.grid(row=3, column=1, padx=15, pady=15, sticky='ew')
         
-        # Boutons
-        btn_frame = tk.Frame(main_frame, bg='white')
-        btn_frame.pack(pady=20)
+        # Configuration de la grille
+        fields_frame.grid_columnconfigure(1, weight=1)
         
-        tk.Button(btn_frame, text="Ajouter Note", command=self.ajouter_note,
-                 bg='#27ae60', fg='white', font=('Arial', 12, 'bold'),
-                 width=15, height=2).pack(side='left', padx=10)
+        # Boutons avec style moderne - CORRIGÉ
+        btn_container = tk.Frame(form_container, bg='white')
+        btn_container.pack(pady=20, fill='x')
         
-        tk.Button(btn_frame, text="Effacer", command=self.effacer_champs_ajout,
-                 bg='#e74c3c', fg='white', font=('Arial', 12, 'bold'),
-                 width=15, height=2).pack(side='left', padx=10)
+        btn_frame = tk.Frame(btn_container, bg='white')
+        btn_frame.pack(expand=True)
+        
+        # Bouton Ajouter
+        btn_ajouter = self.create_rounded_button(btn_frame, "✅ Ajouter Note", 
+                                                self.ajouter_note, self.colors['success'],
+                                                width=180, height=45, font_size=12)
+        btn_ajouter.pack(side='left', padx=10)
+        
+        # Bouton Effacer
+        btn_effacer = self.create_rounded_button(btn_frame, "🗑️ Effacer", 
+                                               self.effacer_champs_ajout, self.colors['warning'],
+                                               width=180, height=45, font_size=12)
+        btn_effacer.pack(side='left', padx=10)
     
     def setup_consulter_notes(self):
         """Interface pour consulter les notes"""
-        # Frame principal
-        main_frame = tk.Frame(self.frame_consulter, bg='white', relief='raised', bd=2)
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        main_frame = self.create_elegant_frame(self.frame_consulter, "Consulter les Notes")
         
-        # Titre et sélection
-        top_frame = tk.Frame(main_frame, bg='white')
-        top_frame.pack(fill='x', pady=10)
+        # Section de sélection
+        select_container = tk.Frame(main_frame, bg='white')
+        select_container.pack(fill='x', padx=30, pady=15)
         
-        tk.Label(top_frame, text="Consulter les Notes", 
-                font=('Arial', 16, 'bold'), bg='white', fg='#2c3e50').pack()
+        select_frame = tk.Frame(select_container, bg=self.colors['accent'], relief='flat', bd=0)
+        select_frame.pack(fill='x', pady=5)
         
-        select_frame = tk.Frame(main_frame, bg='white')
-        select_frame.pack(pady=10)
+        tk.Label(select_frame, text="👤 Sélectionner un étudiant:",
+                font=('Segoe UI', 12, 'bold'), bg=self.colors['accent'],
+                fg=self.colors['text_dark']).pack(side='left', padx=15, pady=10)
         
-        tk.Label(select_frame, text="Sélectionner un étudiant:", 
-                font=('Arial', 12), bg='white').pack(side='left', padx=5)
-        self.combo_etudiant_consult = ttk.Combobox(select_frame, width=30, state='readonly')
-        self.combo_etudiant_consult.pack(side='left', padx=5)
+        self.combo_etudiant_consult = ttk.Combobox(select_frame, width=30, state='readonly',
+                                                  style='Custom.TCombobox',
+                                                  font=('Segoe UI', 11))
+        self.combo_etudiant_consult.pack(side='left', padx=15, pady=10)
         self.combo_etudiant_consult.bind('<<ComboboxSelected>>', self.afficher_notes_etudiant)
         
-        tk.Button(select_frame, text="Actualiser", command=self.actualiser_notes,
-                 bg='#3498db', fg='white', font=('Arial', 10)).pack(side='left', padx=10)
+        # Bouton actualiser moderne
+        btn_actualiser = self.create_rounded_button(select_frame, "🔄 Actualiser",
+                                                   self.actualiser_notes, self.colors['provincial'],
+                                                   width=130, height=35, font_size=11)
+        btn_actualiser.pack(side='left', padx=15, pady=10)
         
-        # Treeview pour afficher les notes
-        tree_frame = tk.Frame(main_frame, bg='white')
-        tree_frame.pack(fill='both', expand=True, pady=10)
+        # Container pour le tableau
+        table_container = tk.Frame(main_frame, bg='white')
+        table_container.pack(fill='both', expand=True, padx=30, pady=15)
+        
+        # Treeview avec style personnalisé
+        tree_frame = tk.Frame(table_container, bg='white', relief='flat', bd=2)
+        tree_frame.pack(fill='both', expand=True)
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(tree_frame, orient='vertical')
         h_scrollbar = ttk.Scrollbar(tree_frame, orient='horizontal')
         
-        self.tree_notes = ttk.Treeview(tree_frame, 
+        self.tree_notes = ttk.Treeview(tree_frame,
                                       columns=('Cours', 'Enseignant', 'Année', 'Note'),
                                       show='headings',
+                                      style='Custom.Treeview',
                                       yscrollcommand=v_scrollbar.set,
                                       xscrollcommand=h_scrollbar.set)
         
         # Configuration des colonnes
-        self.tree_notes.heading('Cours', text='Cours')
-        self.tree_notes.heading('Enseignant', text='Enseignant')
-        self.tree_notes.heading('Année', text='Année')
-        self.tree_notes.heading('Note', text='Note')
+        self.tree_notes.heading('Cours', text='📚 Cours')
+        self.tree_notes.heading('Enseignant', text='👨‍🏫 Enseignant')
+        self.tree_notes.heading('Année', text='📅 Année')
+        self.tree_notes.heading('Note', text='🎯 Note')
         
-        self.tree_notes.column('Cours', width=200)
-        self.tree_notes.column('Enseignant', width=150)
+        self.tree_notes.column('Cours', width=220)
+        self.tree_notes.column('Enseignant', width=180)
         self.tree_notes.column('Année', width=80)
         self.tree_notes.column('Note', width=80)
         
-        # Placement des scrollbars
+        # Placement
         v_scrollbar.config(command=self.tree_notes.yview)
         h_scrollbar.config(command=self.tree_notes.xview)
         
@@ -169,41 +355,64 @@ class GestionNotes:
         h_scrollbar.pack(side='bottom', fill='x')
         
         # Boutons d'action
-        btn_frame = tk.Frame(main_frame, bg='white')
-        btn_frame.pack(pady=10)
+        action_container = tk.Frame(main_frame, bg='white')
+        action_container.pack(pady=20)
         
-        tk.Button(btn_frame, text="Modifier Note", command=self.modifier_note,
-                 bg='#f39c12', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+        action_frame = tk.Frame(action_container, bg='white')
+        action_frame.pack()
         
-        tk.Button(btn_frame, text="Supprimer Note", command=self.supprimer_note,
-                 bg='#e74c3c', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+        btn_modifier = self.create_rounded_button(action_frame, "✏️ Modifier Note",
+                                                 self.modifier_note, self.colors['grape'],
+                                                 width=160, height=40, font_size=11)
+        btn_modifier.pack(side='left', padx=10)
+        
+        btn_supprimer = self.create_rounded_button(action_frame, "🗑️ Supprimer Note",
+                                                  self.supprimer_note, self.colors['danger'],
+                                                  width=160, height=40, font_size=11)
+        btn_supprimer.pack(side='left', padx=10)
     
     def setup_moyennes(self):
         """Interface pour calculer les moyennes"""
-        # Frame principal
-        main_frame = tk.Frame(self.frame_moyennes, bg='white', relief='raised', bd=2)
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        main_frame = self.create_elegant_frame(self.frame_moyennes, "Calcul des Moyennes")
         
-        # Titre
-        tk.Label(main_frame, text="Calcul des Moyennes", 
-                font=('Arial', 16, 'bold'), bg='white', fg='#2c3e50').pack(pady=10)
+        # Section de sélection
+        select_container = tk.Frame(main_frame, bg='white')
+        select_container.pack(fill='x', padx=30, pady=15)
         
-        # Sélection étudiant
-        select_frame = tk.Frame(main_frame, bg='white')
-        select_frame.pack(pady=10)
+        select_frame = tk.Frame(select_container, bg=self.colors['accent'], relief='flat', bd=0)
+        select_frame.pack(fill='x', pady=5)
         
-        tk.Label(select_frame, text="Étudiant:", font=('Arial', 12), bg='white').pack(side='left', padx=5)
-        self.combo_etudiant_moyenne = ttk.Combobox(select_frame, width=30, state='readonly')
-        self.combo_etudiant_moyenne.pack(side='left', padx=5)
+        tk.Label(select_frame, text="👤 Étudiant:",
+                font=('Segoe UI', 12, 'bold'), bg=self.colors['accent'],
+                fg=self.colors['text_dark']).pack(side='left', padx=15, pady=10)
         
-        tk.Button(select_frame, text="Calculer Moyenne", command=self.calculer_moyenne,
-                 bg='#9b59b6', fg='white', font=('Arial', 12, 'bold')).pack(side='left', padx=10)
+        self.combo_etudiant_moyenne = ttk.Combobox(select_frame, width=30, state='readonly',
+                                                  style='Custom.TCombobox',
+                                                  font=('Segoe UI', 11))
+        self.combo_etudiant_moyenne.pack(side='left', padx=15, pady=10)
+        
+        btn_calculer = self.create_rounded_button(select_frame, "📊 Calculer Moyenne",
+                                                 self.calculer_moyenne, self.colors['grape'],
+                                                 width=180, height=35, font_size=11)
+        btn_calculer.pack(side='left', padx=15, pady=10)
         
         # Zone d'affichage des résultats
-        self.text_moyenne = tk.Text(main_frame, height=15, width=70, 
-                                   font=('Arial', 11), bg='#f8f9fa', 
-                                   relief='sunken', bd=2)
-        self.text_moyenne.pack(pady=20, padx=20, fill='both', expand=True)
+        result_container = tk.Frame(main_frame, bg='white')
+        result_container.pack(fill='both', expand=True, padx=30, pady=15)
+        
+        # Frame avec bordure élégante pour le texte
+        text_frame = tk.Frame(result_container, bg=self.colors['accent'], relief='flat', bd=2)
+        text_frame.pack(fill='both', expand=True, padx=5, pady=5)
+        
+        self.text_moyenne = tk.Text(text_frame, font=('Consolas', 11),
+                                   bg='white', fg=self.colors['text_dark'],
+                                   relief='flat', bd=5, wrap='word')
+        self.text_moyenne.pack(fill='both', expand=True, padx=5, pady=5)
+        
+        # Scrollbar pour le texte
+        text_scroll = ttk.Scrollbar(text_frame, orient='vertical', command=self.text_moyenne.yview)
+        self.text_moyenne.configure(yscrollcommand=text_scroll.set)
+        text_scroll.pack(side='right', fill='y')
     
     def charger_donnees(self):
         """Charger les étudiants et cours depuis Cassandra"""
@@ -320,7 +529,7 @@ class GestionNotes:
                 note
             ))
             
-            messagebox.showinfo("Succès", "Note ajoutée avec succès!")
+            messagebox.showinfo("Succès", "✅ Note ajoutée avec succès!")
             self.effacer_champs_ajout()
             
         except Exception as e:
@@ -433,7 +642,7 @@ class GestionNotes:
                 query = "DELETE FROM notes WHERE etudiant_id = %s AND cours_id = %s AND annee = %s"
                 self.session.execute(query, (uuid.UUID(etudiant_id), uuid.UUID(cours_id), annee))
                 
-                messagebox.showinfo("Succès", "Note supprimée avec succès!")
+                messagebox.showinfo("Succès", "✅ Note supprimée avec succès!")
                 self.afficher_notes_etudiant()
                 
             except Exception as e:
@@ -443,31 +652,55 @@ class GestionNotes:
         """Créer une fenêtre pour modifier une note"""
         fenetre = tk.Toplevel(self.root)
         fenetre.title("Modifier Note")
-        fenetre.geometry("400x300")
-        fenetre.configure(bg='white')
+        fenetre.geometry("450x350")
+        fenetre.configure(bg=self.colors['vanilla_ice'])
         fenetre.grab_set()
         
-        # Titre
-        tk.Label(fenetre, text="Modifier la Note", 
-                font=('Arial', 14, 'bold'), bg='white').pack(pady=10)
+        # Centrer la fenêtre
+        fenetre.update_idletasks()
+        width = fenetre.winfo_width()
+        height = fenetre.winfo_height()
+        x = (fenetre.winfo_screenwidth() // 2) - (width // 2)
+        y = (fenetre.winfo_screenheight() // 2) - (height // 2)
+        fenetre.geometry(f'+{x}+{y}')
+        
+        # En-tête
+        header_frame = tk.Frame(fenetre, bg=self.colors['cosmic'], height=60)
+        header_frame.pack(fill='x')
+        header_frame.pack_propagate(False)
+        
+        tk.Label(header_frame, text="✏️ Modifier la Note",
+                font=('Segoe UI', 16, 'bold'), bg=self.colors['cosmic'], fg='white').pack(expand=True)
+        
+        # Contenu principal
+        main_frame = tk.Frame(fenetre, bg='white', relief='flat', bd=0)
+        main_frame.pack(fill='both', expand=True, padx=15, pady=15)
         
         # Champs
-        frame_champs = tk.Frame(fenetre, bg='white')
-        frame_champs.pack(pady=20)
+        frame_champs = tk.Frame(main_frame, bg='white')
+        frame_champs.pack(expand=True, pady=20)
         
-        tk.Label(frame_champs, text="Cours:", bg='white').grid(row=0, column=0, sticky='w', padx=5, pady=5)
-        tk.Label(frame_champs, text=values[0], bg='white', relief='sunken', width=30).grid(row=0, column=1, padx=5, pady=5)
+        label_font = ('Segoe UI', 11, 'bold')
         
-        tk.Label(frame_champs, text="Année:", bg='white').grid(row=1, column=0, sticky='w', padx=5, pady=5)
-        tk.Label(frame_champs, text=values[2], bg='white', relief='sunken', width=30).grid(row=1, column=1, padx=5, pady=5)
+        tk.Label(frame_champs, text="📚 Cours:", bg='white', font=label_font,
+                fg=self.colors['text_dark']).grid(row=0, column=0, sticky='w', padx=10, pady=10)
+        tk.Label(frame_champs, text=values[0], bg=self.colors['accent'], relief='flat',
+                width=30, font=('Segoe UI', 10), anchor='w').grid(row=0, column=1, padx=10, pady=10)
         
-        tk.Label(frame_champs, text="Nouvelle Note:", bg='white').grid(row=2, column=0, sticky='w', padx=5, pady=5)
-        entry_nouvelle_note = tk.Entry(frame_champs, width=30)
+        tk.Label(frame_champs, text="📅 Année:", bg='white', font=label_font,
+                fg=self.colors['text_dark']).grid(row=1, column=0, sticky='w', padx=10, pady=10)
+        tk.Label(frame_champs, text=values[2], bg=self.colors['accent'], relief='flat',
+                width=30, font=('Segoe UI', 10), anchor='w').grid(row=1, column=1, padx=10, pady=10)
+        
+        tk.Label(frame_champs, text="🎯 Nouvelle Note:", bg='white', font=label_font,
+                fg=self.colors['text_dark']).grid(row=2, column=0, sticky='w', padx=10, pady=10)
+        entry_nouvelle_note = tk.Entry(frame_champs, width=32, font=('Segoe UI', 10),
+                                      relief='flat', bd=5, bg=self.colors['accent'])
         entry_nouvelle_note.insert(0, values[3])
-        entry_nouvelle_note.grid(row=2, column=1, padx=5, pady=5)
+        entry_nouvelle_note.grid(row=2, column=1, padx=10, pady=10)
         
         # Boutons
-        frame_boutons = tk.Frame(fenetre, bg='white')
+        frame_boutons = tk.Frame(main_frame, bg='white')
         frame_boutons.pack(pady=20)
         
         def sauvegarder():
@@ -501,7 +734,7 @@ class GestionNotes:
                 """
                 self.session.execute(query, (nouvelle_note, uuid.UUID(etudiant_id), uuid.UUID(cours_id), annee))
                 
-                messagebox.showinfo("Succès", "Note modifiée avec succès!")
+                messagebox.showinfo("Succès", "✅ Note modifiée avec succès!")
                 fenetre.destroy()
                 self.afficher_notes_etudiant()
                 
@@ -510,11 +743,15 @@ class GestionNotes:
             except Exception as e:
                 messagebox.showerror("Erreur", f"Erreur lors de la modification: {e}")
         
-        tk.Button(frame_boutons, text="Sauvegarder", command=sauvegarder,
-                 bg='#27ae60', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
+        btn_sauvegarder = self.create_rounded_button(frame_boutons, "💾 Sauvegarder",
+                                                    sauvegarder, self.colors['success'],
+                                                    width=140, height=35, font_size=11)
+        btn_sauvegarder.pack(side='left', padx=10)
         
-        tk.Button(frame_boutons, text="Annuler", command=fenetre.destroy,
-                 bg='#e74c3c', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
+        btn_annuler = self.create_rounded_button(frame_boutons, "❌ Annuler",
+                                               fenetre.destroy, self.colors['danger'],
+                                               width=140, height=35, font_size=11)
+        btn_annuler.pack(side='left', padx=10)
     
     def calculer_moyenne(self):
         """Calculer et afficher la moyenne d'un étudiant"""
@@ -543,9 +780,9 @@ class GestionNotes:
             rows = list(self.session.execute(query, (uuid.UUID(etudiant_id),)))
             
             if not rows:
-                self.text_moyenne.insert(tk.END, f"RAPPORT DE NOTES - {etudiant_nom}\n")
-                self.text_moyenne.insert(tk.END, "="*50 + "\n\n")
-                self.text_moyenne.insert(tk.END, "Aucune note trouvée pour cet étudiant.\n")
+                self.text_moyenne.insert(tk.END, f"📊 RAPPORT DE NOTES - {etudiant_nom}\n")
+                self.text_moyenne.insert(tk.END, "="*60 + "\n\n")
+                self.text_moyenne.insert(tk.END, "❌ Aucune note trouvée pour cet étudiant.\n")
                 return
             
             notes_par_annee = {}
@@ -566,76 +803,79 @@ class GestionNotes:
                 total_notes += 1
                 somme_notes += row.note
             
-            # Afficher les résultats
-            self.text_moyenne.insert(tk.END, f"RAPPORT DE NOTES - {etudiant_nom}\n")
-            self.text_moyenne.insert(tk.END, "="*50 + "\n\n")
+            # Afficher les résultats avec style
+            self.text_moyenne.insert(tk.END, f"📊 RAPPORT DE NOTES - {etudiant_nom}\n")
+            self.text_moyenne.insert(tk.END, "="*60 + "\n\n")
             
             # Afficher par année
             for annee in sorted(notes_par_annee.keys()):
-                self.text_moyenne.insert(tk.END, f"ANNÉE {annee}:\n")
-                self.text_moyenne.insert(tk.END, "-" * 20 + "\n")
+                self.text_moyenne.insert(tk.END, f"📅 ANNÉE {annee}:\n")
+                self.text_moyenne.insert(tk.END, "-" * 30 + "\n")
                 
                 notes_annee = notes_par_annee[annee]
                 somme_annee = sum(note[1] for note in notes_annee)
                 moyenne_annee = somme_annee / len(notes_annee)
                 
                 for cours, note in notes_annee:
-                    self.text_moyenne.insert(tk.END, f"  • {cours}: {note:.2f}/20\n")
+                    self.text_moyenne.insert(tk.END, f"  📚 {cours}: {note:.2f}/20\n")
                 
-                self.text_moyenne.insert(tk.END, f"\nMoyenne {annee}: {moyenne_annee:.2f}/20\n")
+                self.text_moyenne.insert(tk.END, f"\n🎯 Moyenne {annee}: {moyenne_annee:.2f}/20\n")
                 
-                # Appréciation
+                # Appréciation avec emojis
                 if moyenne_annee >= 16:
-                    appreciation = "Très Bien"
+                    appreciation = "🏆 Très Bien"
                 elif moyenne_annee >= 14:
-                    appreciation = "Bien"
+                    appreciation = "🥈 Bien"
                 elif moyenne_annee >= 12:
-                    appreciation = "Assez Bien"
+                    appreciation = "🥉 Assez Bien"
                 elif moyenne_annee >= 10:
-                    appreciation = "Passable"
+                    appreciation = "✅ Passable"
                 else:
-                    appreciation = "Insuffisant"
+                    appreciation = "❌ Insuffisant"
                 
-                self.text_moyenne.insert(tk.END, f"Appréciation: {appreciation}\n\n")
+                self.text_moyenne.insert(tk.END, f"📝 Appréciation: {appreciation}\n\n")
             
             # Moyenne générale
             if total_notes > 0:
                 moyenne_generale = somme_notes / total_notes
-                self.text_moyenne.insert(tk.END, "="*50 + "\n")
-                self.text_moyenne.insert(tk.END, f"MOYENNE GÉNÉRALE: {moyenne_generale:.2f}/20\n")
-                self.text_moyenne.insert(tk.END, f"Nombre total de notes: {total_notes}\n")
+                self.text_moyenne.insert(tk.END, "="*60 + "\n")
+                self.text_moyenne.insert(tk.END, f"🎯 MOYENNE GÉNÉRALE: {moyenne_generale:.2f}/20\n")
+                self.text_moyenne.insert(tk.END, f"📊 Nombre total de notes: {total_notes}\n")
                 
                 # Appréciation générale
                 if moyenne_generale >= 16:
-                    appreciation_generale = "Excellent parcours"
+                    appreciation_generale = "🌟 Excellent parcours"
                 elif moyenne_generale >= 14:
-                    appreciation_generale = "Bon parcours"
+                    appreciation_generale = "⭐ Bon parcours"
                 elif moyenne_generale >= 12:
-                    appreciation_generale = "Parcours satisfaisant"
+                    appreciation_generale = "👍 Parcours satisfaisant"
                 elif moyenne_generale >= 10:
-                    appreciation_generale = "Parcours acceptable"
+                    appreciation_generale = "✔️ Parcours acceptable"
                 else:
-                    appreciation_generale = "Parcours à améliorer"
+                    appreciation_generale = "⚠️ Parcours à améliorer"
                 
-                self.text_moyenne.insert(tk.END, f"Appréciation générale: {appreciation_generale}\n")
+                self.text_moyenne.insert(tk.END, f"🏅 Appréciation générale: {appreciation_generale}\n")
             
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors du calcul de la moyenne: {e}")
     
     def run(self):
         """Lancer l'application"""
+        # Centrer la fenêtre après le chargement complet
+        self.root.update_idletasks()
+        self.center_window()
         self.root.mainloop()
 
 # Point d'entrée du programme
 if __name__ == "__main__":
-    print("Démarrage de l'application de gestion des notes...")
-    print("Connexion à Cassandra...")
+    print("🚀 Démarrage de l'application de gestion des notes...")
+    print("🔌 Connexion à Cassandra...")
     
     app = GestionNotes()
     
     if app.session:
-        print("Connexion réussie!")
-        print("Lancement de l'interface graphique...")
+        print("✅ Connexion réussie!")
+        print("🎨 Lancement de l'interface graphique élégante...")
         app.run()
     else:
-        print("Impossible de démarrer l'application - Problème de connexion à Cassandra")
+        print("❌ Impossible de démarrer l'application - Problème de connexion à Cassandra")
