@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 
 from Interface_cour import create_interface_cours  # Interface 1
 from gestion_notes import create_note_interface   # Interface 2
-
+from interface_etudiants import create_interface_etudiant  # Interface 2
 
 def lancer_ui():
     root = tk.Tk()
@@ -139,8 +139,10 @@ def lancer_ui():
             frame_note.pack(fill="both", expand=True)
 
         
-    
-    def ouvrir_interface_4():
+  
+
+
+    def ouvrir_interface_3():
         for widget in content_frame.winfo_children():
             widget.destroy()
 
@@ -161,14 +163,12 @@ def lancer_ui():
                        )
         btn_retour.pack(anchor="nw", padx=10, pady=10)
 
-        frame_note = create_stats_interface(main_container)
+        frame_note = create_interface_etudiant(main_container)
         if frame_note:
             frame_note.pack(fill="both", expand=True)
 
 
 
-    def ouvrir_interface_3():
-        messagebox.showinfo("Action", "Ouverture Interface 3")
 
     def afficher_boutons():
         # Supprime tout dans content_frame

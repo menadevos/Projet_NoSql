@@ -11,16 +11,28 @@ selected_student_data = {}
 all_students = []
 student_widgets = []
 
-def demarrer_interface():
+def create_interface_etudiant(parent):
+    container = tk.Frame(parent)
+    manager = demarrer_interface(container)
+    container.pack(fill="both", expand=True)
+    return container
+
+
+def demarrer_interface(parent=None):
     global etudiants_ids, selected_student_data, all_students, student_widgets
 
-    # Initialize main window
-    root = tk.Tk()
-    root.title("Gestion des Étudiants - Interface Professionnelle")
-    root.geometry("1000x750")
-    root.configure(bg='#F8F6F0')  # vanilla_ice
-    root.resizable(True, True)
-    root.minsize(900, 650)
+    # Determine root and container
+    if parent is None:
+        root = tk.Tk()
+        root.title("Gestion des Étudiants - Interface Professionnelle")
+        root.geometry("1000x750")
+        root.configure(bg='#F8F6F0')  # vanilla_ice
+        root.resizable(True, True)
+        root.minsize(900, 650)
+        container = root
+    else:
+        root = parent.winfo_toplevel()
+        container = parent
 
     # Color palette
     colors = {
@@ -61,46 +73,10 @@ def demarrer_interface():
                     foreground=colors['text_dark'],
                     borderwidth=2)
 
-    # Title frame
-    title_frame = tk.Frame(root, bg=colors['cosmic'], height=60)
-    title_frame.pack(fill='x')
-    title_frame.pack_propagate(False)
-
-    gradient_frame1 = tk.Frame(title_frame, bg=colors['provincial'], height=15)
-    gradient_frame1.pack(fill='x')
-    gradient_frame2 = tk.Frame(title_frame, bg=colors['cosmic'], height=30)
-    gradient_frame2.pack(fill='x')
-    gradient_frame3 = tk.Frame(title_frame, bg=colors['grape'], height=15)
-    gradient_frame3.pack(fill='x')
-
-    title_content = tk.Frame(gradient_frame2, bg=colors['cosmic'])
-    title_content.pack(expand=True, fill='both')
-
-    title_label = tk.Label(title_content,
-                          text="Système de Gestion des Étudiants",
-                          bg=colors['cosmic'],
-                          fg=colors['vanilla_ice'],
-                          font=('Segoe UI', 18, 'bold'))
-    title_label.pack(side='left', pady=5, padx=20)
-
-    controls_frame = tk.Frame(title_content, bg=colors['cosmic'])
-    controls_frame.pack(side='right', padx=15, pady=5)
-
-    minimize_btn = tk.Button(controls_frame, text="—", bg=colors['warning'], fg=colors['vanilla_ice'],
-                            font=('Arial', 10, 'bold'), bd=0, width=3, height=1,
-                            command=root.iconify)
-    minimize_btn.pack(side='left', padx=2)
-
-    close_btn = tk.Button(controls_frame, text="×", bg=colors['danger'], fg=colors['vanilla_ice'],
-                         font=('Arial', 12, 'bold'), bd=0, width=3, height=1,
-                         command=root.quit)
-    close_btn.pack(side='left', padx=2)
-
-    shadow_frame = tk.Frame(root, bg=colors['text_light'], height=2)
-    shadow_frame.pack(fill='x')
-
-    main_container = tk.Frame(root, bg=colors['vanilla_ice'], relief='flat', bd=0)
-    main_container.pack(fill='both', expand=True, padx=25, pady=25)
+    # Main container - use the parent container directly
+    main_container = container if parent is not None else tk.Frame(container, bg=colors['vanilla_ice'], relief='flat', bd=0)
+    if parent is None:
+        main_container.pack(fill='both', expand=True, padx=25, pady=25)
 
     content_frame = tk.Frame(main_container, bg=colors['vanilla_ice'])
     content_frame.pack(fill='both', expand=True)
@@ -499,21 +475,23 @@ def demarrer_interface():
 
     search_entry.bind('<KeyRelease>', lambda e: rechercher_etudiants())
 
-    root.bind('<Control-n>', lambda e: clear_form())
-    root.bind('<Control-s>', lambda e: ajouter_etudiant_ui())
-    root.bind('<Control-f>', lambda e: search_entry.focus())
-    root.bind('<Escape>', lambda e: clear_search())
+    if parent is None:
+        root.bind('<Control-n>', lambda e: clear_form())
+        root.bind('<Control-s>', lambda e: ajouter_etudiant_ui())
+        root.bind('<Control-f>', lambda e: search_entry.focus())
+        root.bind('<Escape>', lambda e: clear_search())
 
     afficher_etudiants()
 
-    root.update_idletasks()
-    x = (root.winfo_screenwidth() // 2) - (1000 // 2)
-    y = (root.winfo_screenheight() // 2) - (750 // 2)
-    root.geometry(f'1000x750+{x}+{y}')
+    if parent is None:
+        root.update_idletasks()
+        x = (root.winfo_screenwidth() // 2) - (1000 // 2)
+        y = (root.winfo_screenheight() // 2) - (750 // 2)
+        root.geometry(f'1000x750+{x}+{y}')
+        entry_nom.focus()
+        root.mainloop()
 
-    entry_nom.focus()
-
-    root.mainloop()
+    return container
 
 if __name__ == "__main__":
     demarrer_interface()

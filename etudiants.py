@@ -6,6 +6,7 @@ from typing import List, Tuple
 from cassandra.query import SimpleStatement
 import re
 
+
 def validate_email(email: str) -> bool:
     """
     Valide le format de l'adresse email.
