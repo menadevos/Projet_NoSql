@@ -17,32 +17,3 @@ def lister_cours():
     query = "SELECT id, nom, enseignant FROM cours"
     rows = session.execute(query)
     return list(rows)
-
-
-
-def update_cours(id_cours, nom=None, enseignant=None):
-    # On construit la requête dynamiquement selon les champs à mettre à jour
-    updates = []
-    params = []
-
-    if nom is not None:
-        updates.append("nom = %s")
-        params.append(nom)
-
-    if enseignant is not None:
-        updates.append("enseignant = %s")
-        params.append(enseignant)
-
-    if not updates:
-        # Rien à mettre à jour
-        return False
-
-    params.append(id_cours)  # pour la clause WHERE
-
-    query = f"""
-        UPDATE cours
-        SET {', '.join(updates)}
-        WHERE id = %s
-    """
-    session.execute(query, tuple(params))
-    return True

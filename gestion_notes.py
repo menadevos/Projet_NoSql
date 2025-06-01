@@ -1,57 +1,40 @@
 # -*- coding: utf-8 -*-
 # gestion_notes_elegant.py
 
-import tkinter as tk
-from tkinter import ttk, messagebox
+import Tkinter as tk
+import tkMessageBox as messagebox
+import ttk
 from cassandra.cluster import Cluster
 import uuid
 from datetime import datetime
 
-def create_note_interface(parent):
-    """Crée et retourne l'interface de gestion des cours intégrée dans le parent donné"""
-    # On crée un conteneur Frame qui va accueillir le CourseManager
-    container = tk.Frame(parent)
-    
-    # On adapte le CourseManager pour qu'il utilise ce container comme racine
-    # plutôt que de créer sa propre fenêtre Tk()
-    manager = GestioenNots(container)  # On passe le container comme racine
-    
-    # On s'assure que le manager remplit tout l'espace disponible
-    container.pack(fill="both", expand=True)
-    
-    return container
-
-
-class GestioenNots:
-    def __init__(self, parent=None):
+class GestionNotes:
+    def __init__(self):
         self.session = self.get_session()
-        
-        if parent is not None:
-            self.root = parent
-            self.is_embedded = True
-        else:
-            self.root = tk.Tk()
-            self.root.title("Gestion des Notes - Étudiants")
-            self.root.geometry("1000x700")
-            self.root.configure(bg='#F8F6F0')
-            self.center_window()
-            self.is_embedded = False
+        self.root = tk.Toplevel()
 
+        self.root.title("Gestion des Notes - Etudiants")
+        
+        # Taille réduite et centrée
+        self.root.geometry("1000x700")
         self.root.configure(bg='#F8F6F0')  # Vanilla ice background
+        
+        # Centrer la fenêtre sur l'écran
+        self.center_window()
         
         # Palette de couleurs élégante
         self.colors = {
-            'vanilla_ice': '#F8F6F0',
-            'cosmic': '#2E1065',
-            'provincial': '#16537e',
-            'grape': '#7C3AED',
-            'light_grape': '#A78BFA',
-            'accent': '#F3F4F6',
-            'text_dark': '#1F2937',
-            'text_light': '#6B7280',
-            'success': '#10B981',
-            'warning': '#F59E0B',
-            'danger': '#EF4444'
+            'vanilla_ice': '#F8F6F0',      # Fond principal
+            'cosmic': '#2E1065',           # Bleu violet foncé
+            'provincial': '#16537e',       # Bleu-vert
+            'grape': '#7C3AED',           # Violet
+            'light_grape': '#A78BFA',     # Violet clair
+            'accent': '#F3F4F6',          # Gris très clair
+            'text_dark': '#1F2937',       # Texte foncé
+            'text_light': '#6B7280',      # Texte clair
+            'success': '#10B981',         # Vert succès
+            'warning': '#F59E0B',         # Orange warning
+            'danger': '#EF4444'           # Rouge danger
         }
         
         # Variables pour stocker les données
@@ -61,6 +44,7 @@ class GestioenNots:
         self.setup_styles()
         self.setup_ui()
         self.charger_donnees()
+    
     def center_window(self):
         """Centrer la fenêtre sur l'écran"""
         self.root.update_idletasks()
@@ -68,7 +52,8 @@ class GestioenNots:
         height = self.root.winfo_height()
         x = (self.root.winfo_screenwidth() // 2) - (width // 2)
         y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'+{x}+{y}')
+        self.root.geometry('+{}+{}'.format(x, y))
+
     
     def setup_styles(self):
         """Configuration des styles personnalisés"""
@@ -161,7 +146,8 @@ class GestioenNots:
         color = color.lstrip('#')
         rgb = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
         lighter_rgb = tuple(min(255, int(c * 1.2)) for c in rgb)
-        return f"#{lighter_rgb[0]:02x}{lighter_rgb[1]:02x}{lighter_rgb[2]:02x}"
+        return "#{:02x}{:02x}{:02x}".format(lighter_rgb[0], lighter_rgb[1], lighter_rgb[2])
+
     
     def create_elegant_frame(self, parent, title=""):
         """Créer un frame élégant avec ombre"""
@@ -192,12 +178,27 @@ class GestioenNots:
             session = cluster.connect('gestion_etudiants')
             return session
         except Exception as e:
-            messagebox.showerror("Erreur", f"Impossible de se connecter à Cassandra: {e}")
+            messagebox.showerror("Erreur", "Impossible de se connecter à Cassandra: {}".format(e))
+
             return None
     
     def setup_ui(self):
         """Configuration de l'interface utilisateur"""
-      
+        # En-tête principal avec dégradé
+        header_frame = tk.Frame(self.root, bg=self.colors['cosmic'], height=80)
+        header_frame.pack(fill='x', pady=(0, 20))
+        header_frame.pack_propagate(False)
+        
+        # Titre principal avec style moderne
+        title_label = tk.Label(header_frame, text="🎓 GESTION DES NOTES ÉTUDIANTS",
+                              font=('Segoe UI', 22, 'bold'),
+                              fg='white', bg=self.colors['cosmic'])
+        title_label.pack(expand=True)
+        
+        subtitle_label = tk.Label(header_frame, text="Système de gestion académique moderne",
+                                font=('Segoe UI', 11),
+                                fg=self.colors['light_grape'], bg=self.colors['cosmic'])
+        subtitle_label.pack()
         
         # Container principal
         main_container = tk.Frame(self.root, bg=self.colors['vanilla_ice'])
@@ -426,17 +427,20 @@ class GestioenNots:
         try:
             # Charger les étudiants
             rows = self.session.execute("SELECT id, nom, prenom FROM etudiants")
-            self.etudiants = [(str(row.id), f"{row.nom} {row.prenom}") for row in rows]
+            self.etudiants = [(str(row.id), "{} {}".format(row.nom, row.prenom)) for row in rows]
+
             
             # Charger les cours
             rows = self.session.execute("SELECT id, nom, enseignant FROM cours")
-            self.cours = [(str(row.id), f"{row.nom} ({row.enseignant})") for row in rows]
+            self.cours = [(str(row.id), "{} ({})".format(row.nom, row.enseignant)) for row in rows]
+
             
             # Mettre à jour les combobox
             self.mettre_a_jour_combobox()
             
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du chargement des données: {e}")
+            messagebox.showerror("Erreur", "Erreur lors du chargement des données: {}".format(e))
+
     
     def mettre_a_jour_combobox(self):
         """Mettre à jour toutes les combobox"""
@@ -511,12 +515,13 @@ class GestioenNots:
             )))
             
             if existing:
-                response = messagebox.askyesno(
-                    "Note existante", 
-                    f"Une note existe déjà pour cet étudiant dans ce cours pour l'année {annee}.\n"
-                    f"Note actuelle: {existing[0].note}\n"
-                    f"Voulez-vous la remplacer par {note}?"
-                )
+                message = (
+                    "Une note existe déjà pour cet étudiant dans ce cours pour l'année {}.\n"
+                    "Note actuelle: {}\n"
+                    "Voulez-vous la remplacer par {} ?"
+                ).format(annee, existing[0].note, note)
+
+                response = messagebox.askyesno("Note existante", message)
                 if not response:
                     return
             
@@ -537,8 +542,10 @@ class GestioenNots:
             self.effacer_champs_ajout()
             
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de l'ajout: {str(e)}")
-            print(f"Erreur détaillée: {e}")
+            messagebox.showerror("Erreur", "Erreur lors de l'ajout: %s" % str(e))
+
+            print("Erreur détaillée: {}".format(e))
+
     
     def effacer_champs_ajout(self):
         """Effacer les champs du formulaire d'ajout"""
@@ -588,11 +595,13 @@ class GestioenNots:
                         cours_nom,
                         enseignant,
                         row.annee,
-                        f"{row.note:.2f}"
+                        "{:.2f}".format(row.note)
+
                     ))
                 
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de l'affichage des notes: {e}")
+            mmessagebox.showerror("Erreur", "Erreur lors de l'affichage des notes: {}".format(e))
+
     
     def actualiser_notes(self):
         """Actualiser l'affichage des notes"""
@@ -650,7 +659,8 @@ class GestioenNots:
                 self.afficher_notes_etudiant()
                 
             except Exception as e:
-                messagebox.showerror("Erreur", f"Erreur lors de la suppression: {e}")
+                messagebox.showerror("Erreur", "Erreur lors de la suppression: {}".format(e))
+
     
     def fenetre_modification(self, values):
         """Créer une fenêtre pour modifier une note"""
@@ -666,7 +676,8 @@ class GestioenNots:
         height = fenetre.winfo_height()
         x = (fenetre.winfo_screenwidth() // 2) - (width // 2)
         y = (fenetre.winfo_screenheight() // 2) - (height // 2)
-        fenetre.geometry(f'+{x}+{y}')
+        fenetre.geometry('+{}+{}'.format(x, y))
+
         
         # En-tête
         header_frame = tk.Frame(fenetre, bg=self.colors['cosmic'], height=60)
@@ -745,7 +756,8 @@ class GestioenNots:
             except ValueError:
                 messagebox.showerror("Erreur", "Veuillez entrer une note valide")
             except Exception as e:
-                messagebox.showerror("Erreur", f"Erreur lors de la modification: {e}")
+                messagebox.showerror("Erreur", "Erreur lors de la modification: {}".format(e))
+
         
         btn_sauvegarder = self.create_rounded_button(frame_boutons, "💾 Sauvegarder",
                                                     sauvegarder, self.colors['success'],
@@ -784,7 +796,8 @@ class GestioenNots:
             rows = list(self.session.execute(query, (uuid.UUID(etudiant_id),)))
             
             if not rows:
-                self.text_moyenne.insert(tk.END, f"📊 RAPPORT DE NOTES - {etudiant_nom}\n")
+                self.text_moyenne.insert(tk.END, "­ƒôè RAPPORT DE NOTES - {}\n".format(etudiant_nom))
+
                 self.text_moyenne.insert(tk.END, "="*60 + "\n\n")
                 self.text_moyenne.insert(tk.END, "❌ Aucune note trouvée pour cet étudiant.\n")
                 return
@@ -808,12 +821,14 @@ class GestioenNots:
                 somme_notes += row.note
             
             # Afficher les résultats avec style
-            self.text_moyenne.insert(tk.END, f"📊 RAPPORT DE NOTES - {etudiant_nom}\n")
+            self.text_moyenne.insert(tk.END, "­ƒôè RAPPORT DE NOTES - {}\n".format(etudiant_nom))
+
             self.text_moyenne.insert(tk.END, "="*60 + "\n\n")
             
             # Afficher par année
             for annee in sorted(notes_par_annee.keys()):
-                self.text_moyenne.insert(tk.END, f"📅 ANNÉE {annee}:\n")
+                self.text_moyenne.insert(tk.END, "­ƒôà ANN├ëE {}:\n".format(annee))
+
                 self.text_moyenne.insert(tk.END, "-" * 30 + "\n")
                 
                 notes_annee = notes_par_annee[annee]
@@ -821,9 +836,11 @@ class GestioenNots:
                 moyenne_annee = somme_annee / len(notes_annee)
                 
                 for cours, note in notes_annee:
-                    self.text_moyenne.insert(tk.END, f"  📚 {cours}: {note:.2f}/20\n")
+                    self.text_moyenne.insert(tk.END, "  ­ƒôÜ {}: {:.2f}/20\n".format(cours, note))
+
                 
-                self.text_moyenne.insert(tk.END, f"\n🎯 Moyenne {annee}: {moyenne_annee:.2f}/20\n")
+                self.text_moyenne.insert(tk.END, "\n­ƒÄ» Moyenne {}: {:.2f}/20\n".format(annee, moyenne_annee))
+
                 
                 # Appréciation avec emojis
                 if moyenne_annee >= 16:
@@ -837,14 +854,17 @@ class GestioenNots:
                 else:
                     appreciation = "❌ Insuffisant"
                 
-                self.text_moyenne.insert(tk.END, f"📝 Appréciation: {appreciation}\n\n")
+                self.text_moyenne.insert(tk.END, "­ƒôØ Appr├®ciation: {}\n\n".format(appreciation))
+
             
             # Moyenne générale
             if total_notes > 0:
                 moyenne_generale = somme_notes / total_notes
                 self.text_moyenne.insert(tk.END, "="*60 + "\n")
-                self.text_moyenne.insert(tk.END, f"🎯 MOYENNE GÉNÉRALE: {moyenne_generale:.2f}/20\n")
-                self.text_moyenne.insert(tk.END, f"📊 Nombre total de notes: {total_notes}\n")
+                self.text_moyenne.insert(tk.END, "­ƒÄ» MOYENNE GÉNÉRALE: {:.2f}/20\n".format(moyenne_generale))
+
+                self.text_moyenne.insert(tk.END, "­ƒôè Nombre total de notes: {}\n".format(total_notes))
+
                 
                 # Appréciation générale
                 if moyenne_generale >= 16:
@@ -858,10 +878,11 @@ class GestioenNots:
                 else:
                     appreciation_generale = "⚠️ Parcours à améliorer"
                 
-                self.text_moyenne.insert(tk.END, f"🏅 Appréciation générale: {appreciation_generale}\n")
+                self.text_moyenne.insert(tk.END, u"Appréciation générale: {}\n".format(appreciation_generale))
             
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du calcul de la moyenne: {e}")
+            messagebox.showerror("Erreur", "Erreur lors du calcul de la moyenne: {}".format(e))
+
     
     def run(self):
         """Lancer l'application"""
@@ -875,7 +896,7 @@ if __name__ == "__main__":
     print("🚀 Démarrage de l'application de gestion des notes...")
     print("🔌 Connexion à Cassandra...")
     
-    app = GestioenNots()
+    app = GestionNotes()
     
     if app.session:
         print("✅ Connexion réussie!")
