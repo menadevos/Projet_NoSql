@@ -2,76 +2,97 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from cassandra.cluster import Cluster
 from uuid import uuid1
-import subprocess
+
+
+def create_interface_cours(parent):
+    container = tk.Frame(parent)
+    manager = CourseManager(container)
+    container.pack(fill="both", expand=True)
+    return container
+
 
 class CourseManager:
     def __init__(self, root):
+        self.root = root
         self.colors = {
-            'vanilla_ice': '#F8F6F0',      # Fond principal
-            'cosmic': '#2E1065',           # Bleu violet foncé
-            'provincial': '#16537e',       # Bleu-vert
-            'grape': '#7C3AED',            # Violet
-            'light_grape': '#A78BFA',      # Violet clair
-            'accent': '#F3F4F6',           # Gris très clair
-            'text_dark': '#1F2937',        # Texte foncé
-            'text_light': '#6B7280',       # Texte clair
-            'success': '#10B981',          # Vert succès
-            'warning': '#F59E0B',          # Orange warning
-            'danger': '#EF4444'            # Rouge danger
+            'vanilla_ice': '#F8F6F0',
+            'cosmic': '#2E1065',
+            'provincial': '#16537e',
+            'grape': '#7C3AED',
+            'light_grape': '#A78BFA',
+            'accent': '#F3F4F6',
+            'text_dark': '#1F2937',
+            'text_light': '#6B7280',
+            'success': '#10B981',
+            'warning': '#F59E0B',
+            'danger': '#EF4444'
         }
 
-        self.root = root
-        self.root.title("Gestion des Cours")
-        self.root.geometry("600x400")
-        self.root.configure(bg=self.colors['vanilla_ice'])
+        if isinstance(self.root, (tk.Tk, tk.Toplevel)):
+            self.root.title("Gestion des Cours")
+            self.root.geometry("700x450")
+            self.root.configure(bg=self.colors['vanilla_ice'])
 
-        # Connexion à Cassandra
-        self.cluster = Cluster(['127.0.0.1'])
-        self.session = self.cluster.connect()
+        try:
+            self.cluster = Cluster(['127.0.0.1'])
+            self.session = self.cluster.connect()
+            self.setup_database()
+        except Exception as e:
+            messagebox.showerror("Erreur de connexion",
+                                 f"Impossible de se connecter à Cassandra: {str(e)}\n"
+                                 "Assurez-vous que Cassandra est démarré.")
+            self.cluster = None
+            self.session = None
 
-        self.setup_database()
         self.style_buttons()
+
+        self.main_frame = tk.Frame(self.root, bg=self.colors['vanilla_ice'])
+        self.main_frame.pack(fill="both", expand=True)
+
+        self.cours_frame = tk.Frame(self.main_frame, bg=self.colors['vanilla_ice'])
+        self.cours_frame.pack(fill="both", expand=True)
+
+        self.form_frame = tk.Frame(self.main_frame, bg=self.colors['vanilla_ice'])
+
         self.setup_ui()
+        self.afficher_cours_direct()
 
     def style_buttons(self):
         style = ttk.Style()
         style.theme_use('default')
 
-        # Bouton vert succès
         style.configure("Success.TButton",
                         background=self.colors['success'],
                         foreground="white",
                         font=("Arial", 11, "bold"),
                         padding=6)
-        style.map("Success.TButton",
-                  background=[('active', '#0f9d71')])
+        style.map("Success.TButton", background=[('active', '#0f9d71')])
 
-        # Bouton rouge danger (Retour)
         style.configure("Danger.TButton",
                         background=self.colors['danger'],
                         foreground="white",
                         font=("Arial", 11, "bold"),
                         padding=6)
-        style.map("Danger.TButton",
-                  background=[('active', '#d13c3c')])
+        style.map("Danger.TButton", background=[('active', '#d13c3c')])
 
-        # Treeview style
         style.configure("Treeview",
                         background=self.colors['accent'],
                         foreground=self.colors['text_dark'],
-                        rowheight=25,
+                        rowheight=50,
                         fieldbackground=self.colors['vanilla_ice'],
-                        font=("Arial", 10))
-        style.map('Treeview', background=[('selected', self.colors['grape'])], foreground=[('selected', 'white')])
+                        font=("Arial", 15))
+        style.map('Treeview',
+                  background=[('selected', self.colors['grape'])],
+                  foreground=[('selected', 'white')])
 
-        # Scrollbar style (optionnel)
-        style.configure("Vertical.TScrollbar",
-                        troughcolor=self.colors['vanilla_ice'],
-                        background=self.colors['grape'],
-                        bordercolor=self.colors['vanilla_ice'],
-                        arrowcolor=self.colors['grape'])
+        style.configure("Treeview.Heading",
+                        font=("Arial", 11, "bold"),
+                        background=self.colors['cosmic'],
+                        foreground="white")
 
     def setup_database(self):
+        if self.session is None:
+            return
         self.session.execute("""
             CREATE KEYSPACE IF NOT EXISTS gestion_etudiants 
             WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
@@ -86,115 +107,133 @@ class CourseManager:
         """)
 
     def setup_ui(self):
-        title = tk.Label(self.root, text="Gestion des Cours", 
-                         font=("Helvetica", 22, "bold"), 
-                         bg=self.colors['vanilla_ice'], 
+        header_frame = tk.Frame(self.cours_frame, bg=self.colors['vanilla_ice'])
+        header_frame.pack(fill='x', pady=(15, 5), padx=15)
+
+        title = tk.Label(header_frame, text="Liste des Cours",
+                         font=("Helvetica", 22, "bold"),
+                         bg=self.colors['vanilla_ice'],
                          fg=self.colors['cosmic'])
-        title.pack(pady=20)
+        title.pack(side='left')
 
-        form_frame = tk.Frame(self.root, bg=self.colors['vanilla_ice'])
-        form_frame.pack(pady=10)
+        btn_ajouter = ttk.Button(header_frame, text="Ajouter un nouveau cours",
+                                 command=self.afficher_formulaire_ajout,
+                                 style="Success.TButton")
+        btn_ajouter.pack(side='right')
 
-        tk.Label(form_frame, text="Nom du cours * :", 
-                 bg=self.colors['vanilla_ice'], fg=self.colors['text_dark'], 
-                 font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=10, sticky="e")
-        self.entry_nom = ttk.Entry(form_frame, width=40)
-        self.entry_nom.grid(row=0, column=1, padx=5, pady=10)
+        self.tree = ttk.Treeview(self.cours_frame, columns=("ID", "Nom", "Enseignant"), show="headings", height=15)
+        self.tree.heading("ID", text="ID court")
+        self.tree.heading("Nom", text="Nom du cours")
+        self.tree.heading("Enseignant", text="Enseignant")
+        self.tree.column("ID", width=120, anchor="center")
+        self.tree.column("Nom", width=250)
+        self.tree.column("Enseignant", width=250)
+        self.tree.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
 
-        tk.Label(form_frame, text="Enseignant * :", 
-                 bg=self.colors['vanilla_ice'], fg=self.colors['text_dark'], 
-                 font=("Arial", 12)).grid(row=1, column=0, padx=5, pady=10, sticky="e")
-        self.entry_ens = ttk.Entry(form_frame, width=40)
-        self.entry_ens.grid(row=1, column=1, padx=5, pady=10)
+        self.tree.tag_configure('oddrow', background=self.colors['accent'])
+        self.tree.tag_configure('evenrow', background='white')
 
-        btn_ajouter = ttk.Button(self.root, text="Ajouter le cours", 
-                                 command=self.ajouter_cours, style="Success.TButton")
-        btn_ajouter.pack(pady=12)
+        scrollbar = ttk.Scrollbar(self.cours_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
 
-        btn_afficher = ttk.Button(self.root, text="Afficher les cours disponibles", 
-                                  command=self.afficher_cours, style="Success.TButton")
-        btn_afficher.pack()
+        self.build_formulaire()
 
-        btn_retour_main = ttk.Button(self.root, text="Retour", 
-                                     command=self.retour_main_interface, style="Danger.TButton")
-        btn_retour_main.pack(pady=15)
+    def afficher_cours_direct(self):
+        self.form_frame.pack_forget()
+        self.cours_frame.pack(fill="both", expand=True)
 
-        mandatory_label = tk.Label(self.root, text="* Champs obligatoires", 
-                                   bg=self.colors['vanilla_ice'], fg=self.colors['danger'], 
-                                   font=("Arial", 10, "italic"))
-        mandatory_label.pack(pady=5)
+        if self.session is None:
+            messagebox.showerror("Erreur", "Aucune connexion à la base de données disponible.")
+            return
+
+        try:
+            rows = list(self.session.execute("SELECT id, nom, enseignant FROM cours"))
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+            if not rows:
+                self.tree.insert("", "end", values=("", "Aucun cours disponible", ""), tags=('oddrow',))
+                return
+            for idx, row in enumerate(rows):
+                tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                short_id = str(row.id)[:8]
+                self.tree.insert("", "end", values=(short_id, row.nom, row.enseignant), tags=(tag,))
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la récupération des cours: {str(e)}")
+
+    def build_formulaire(self):
+        for widget in self.form_frame.winfo_children():
+            widget.destroy()
+
+        card_frame = tk.Frame(self.form_frame, bg="white", bd=2, relief="groove")
+        card_frame.pack(padx=40, pady=30, fill="x", ipadx=20, ipady=20)
+
+        title = tk.Label(card_frame, text="Ajouter un nouveau cours",
+                         font=("Helvetica", 22, "bold"),
+                         bg="white", fg=self.colors['cosmic'])
+        title.pack(pady=(0, 25))
+
+        form_inner = tk.Frame(card_frame, bg="white")
+        form_inner.pack(padx=20, pady=10)
+
+        label_font = ("Arial", 14)
+        entry_font = ("Arial", 13)
+
+        tk.Label(form_inner, text="Nom du cours * :", bg="white",
+                 fg=self.colors['text_dark'], font=label_font).grid(row=0, column=0, sticky="e", pady=12, padx=15)
+        self.entry_nom = ttk.Entry(form_inner, width=45, font=entry_font)
+        self.entry_nom.grid(row=0, column=1, pady=12)
+
+        tk.Label(form_inner, text="Enseignant * :", bg="white",
+                 fg=self.colors['text_dark'], font=label_font).grid(row=1, column=0, sticky="e", pady=12, padx=15)
+        self.entry_ens = ttk.Entry(form_inner, width=45, font=entry_font)
+        self.entry_ens.grid(row=1, column=1, pady=12)
+
+        btn_frame = tk.Frame(card_frame, bg="white")
+        btn_frame.pack(pady=30)
+
+        btn_save = ttk.Button(btn_frame, text="Ajouter", command=self.ajouter_cours, style="Success.TButton")
+        btn_save.pack(side="left", padx=15)
+
+        btn_cancel = ttk.Button(btn_frame, text="Annuler", command=self.annuler_ajout, style="Danger.TButton")
+        btn_cancel.pack(side="left", padx=15)
+
+    def afficher_formulaire_ajout(self):
+        self.cours_frame.pack_forget()
+        self.form_frame.pack(fill="both", expand=True)
+        self.entry_nom.delete(0, tk.END)
+        self.entry_ens.delete(0, tk.END)
+
+    def annuler_ajout(self):
+        self.form_frame.pack_forget()
+        self.cours_frame.pack(fill="both", expand=True)
 
     def ajouter_cours(self):
+        if self.session is None:
+            messagebox.showerror("Erreur", "Aucune connexion à la base de données disponible.")
+            return
+
         nom = self.entry_nom.get().strip()
         enseignant = self.entry_ens.get().strip()
 
         if not nom or not enseignant:
-            messagebox.showwarning("Champs requis", "Veuillez remplir tous les champs obligatoires.")
+            messagebox.showwarning("Champs manquants", "Veuillez remplir tous les champs.")
             return
 
         try:
-            query = """
-                INSERT INTO cours (id, nom, enseignant)
-                VALUES (%s, %s, %s)
-            """
-            self.session.execute(query, (uuid1(), nom, enseignant))
-            self.entry_nom.delete(0, tk.END)
-            self.entry_ens.delete(0, tk.END)
-            messagebox.showinfo("Succès", "Le cours a été ajouté avec succès.")
+            new_id = uuid1()
+            self.session.execute(
+                "INSERT INTO cours (id, nom, enseignant) VALUES (%s, %s, %s)",
+                (new_id, nom, enseignant)
+            )
+            messagebox.showinfo("Succès", "Cours ajouté avec succès.")
+            self.afficher_cours_direct()
         except Exception as e:
-            messagebox.showerror("Erreur", "Erreur lors de l'ajout du cours: " + str(e))
+            messagebox.showerror("Erreur", f"Erreur lors de l’ajout du cours : {str(e)}")
 
-    def afficher_cours(self):
-        try:
-            query = "SELECT id, nom, enseignant FROM cours"
-            rows = list(self.session.execute(query))
-
-            if not rows:
-                messagebox.showinfo("Info", "Aucun cours disponible pour le moment.")
-                return
-
-            popup = tk.Toplevel(self.root)
-            popup.title("Cours Disponibles")
-            popup.geometry("600x400")
-            popup.configure(bg=self.colors['vanilla_ice'])
-
-            label = tk.Label(popup, text="Liste des Cours Disponibles", 
-                             font=("Helvetica", 16, "bold"), 
-                             bg=self.colors['vanilla_ice'], fg=self.colors['cosmic'])
-            label.pack(pady=10)
-
-            tree = ttk.Treeview(popup, columns=("ID", "Nom", "Enseignant"), show="headings", height=12)
-            tree.heading("ID", text="ID court")
-            tree.heading("Nom", text="Nom du cours")
-            tree.heading("Enseignant", text="Enseignant")
-            tree.column("ID", width=120, anchor="center")
-            tree.column("Nom", width=220)
-            tree.column("Enseignant", width=220)
-            tree.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
-
-            tree.tag_configure('oddrow', background=self.colors['accent'])
-            tree.tag_configure('evenrow', background='white')
-
-            for idx, row in enumerate(rows):
-                tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
-                short_id = str(row.id)[:8]
-                tree.insert("", "end", values=(short_id, row.nom, row.enseignant), tags=(tag,))
-
-            btn_retour = ttk.Button(popup, text="Retour", command=popup.destroy, style="Success.TButton")
-            btn_retour.pack(pady=10)
-
-        except Exception as e:
-            messagebox.showerror("Erreur", "Erreur lors de la récupération des cours: " + str(e))
-
-    def retour_main_interface(self):
-        self.root.destroy()
-        subprocess.Popen(["python", "main_interface.py"])
-
-    def __del__(self):
-        if hasattr(self, 'cluster'):
-            self.cluster.shutdown()
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = CourseManager(root)
+    create_interface_cours(root)
     root.mainloop()
+

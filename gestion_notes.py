@@ -7,32 +7,51 @@ from cassandra.cluster import Cluster
 import uuid
 from datetime import datetime
 
-class GestionNotes:
-    def __init__(self):
+def create_note_interface(parent):
+    """Crée et retourne l'interface de gestion des cours intégrée dans le parent donné"""
+    # On crée un conteneur Frame qui va accueillir le CourseManager
+    container = tk.Frame(parent)
+    
+    # On adapte le CourseManager pour qu'il utilise ce container comme racine
+    # plutôt que de créer sa propre fenêtre Tk()
+    manager = GestioenNots(container)  # On passe le container comme racine
+    
+    # On s'assure que le manager remplit tout l'espace disponible
+    container.pack(fill="both", expand=True)
+    
+    return container
+
+
+class GestioenNots:
+    def __init__(self, parent=None):
         self.session = self.get_session()
-        self.root = tk.Tk()
-        self.root.title("Gestion des Notes - Étudiants")
         
-        # Taille réduite et centrée
-        self.root.geometry("1000x700")
+        if parent is not None:
+            self.root = parent
+            self.is_embedded = True
+        else:
+            self.root = tk.Tk()
+            self.root.title("Gestion des Notes - Étudiants")
+            self.root.geometry("1000x700")
+            self.root.configure(bg='#F8F6F0')
+            self.center_window()
+            self.is_embedded = False
+
         self.root.configure(bg='#F8F6F0')  # Vanilla ice background
-        
-        # Centrer la fenêtre sur l'écran
-        self.center_window()
         
         # Palette de couleurs élégante
         self.colors = {
-            'vanilla_ice': '#F8F6F0',      # Fond principal
-            'cosmic': '#2E1065',           # Bleu violet foncé
-            'provincial': '#16537e',       # Bleu-vert
-            'grape': '#7C3AED',           # Violet
-            'light_grape': '#A78BFA',     # Violet clair
-            'accent': '#F3F4F6',          # Gris très clair
-            'text_dark': '#1F2937',       # Texte foncé
-            'text_light': '#6B7280',      # Texte clair
-            'success': '#10B981',         # Vert succès
-            'warning': '#F59E0B',         # Orange warning
-            'danger': '#EF4444'           # Rouge danger
+            'vanilla_ice': '#F8F6F0',
+            'cosmic': '#2E1065',
+            'provincial': '#16537e',
+            'grape': '#7C3AED',
+            'light_grape': '#A78BFA',
+            'accent': '#F3F4F6',
+            'text_dark': '#1F2937',
+            'text_light': '#6B7280',
+            'success': '#10B981',
+            'warning': '#F59E0B',
+            'danger': '#EF4444'
         }
         
         # Variables pour stocker les données
@@ -42,7 +61,6 @@ class GestionNotes:
         self.setup_styles()
         self.setup_ui()
         self.charger_donnees()
-    
     def center_window(self):
         """Centrer la fenêtre sur l'écran"""
         self.root.update_idletasks()
@@ -179,21 +197,7 @@ class GestionNotes:
     
     def setup_ui(self):
         """Configuration de l'interface utilisateur"""
-        # En-tête principal avec dégradé
-        header_frame = tk.Frame(self.root, bg=self.colors['cosmic'], height=80)
-        header_frame.pack(fill='x', pady=(0, 20))
-        header_frame.pack_propagate(False)
-        
-        # Titre principal avec style moderne
-        title_label = tk.Label(header_frame, text="🎓 GESTION DES NOTES ÉTUDIANTS",
-                              font=('Segoe UI', 22, 'bold'),
-                              fg='white', bg=self.colors['cosmic'])
-        title_label.pack(expand=True)
-        
-        subtitle_label = tk.Label(header_frame, text="Système de gestion académique moderne",
-                                font=('Segoe UI', 11),
-                                fg=self.colors['light_grape'], bg=self.colors['cosmic'])
-        subtitle_label.pack()
+      
         
         # Container principal
         main_container = tk.Frame(self.root, bg=self.colors['vanilla_ice'])
@@ -871,7 +875,7 @@ if __name__ == "__main__":
     print("🚀 Démarrage de l'application de gestion des notes...")
     print("🔌 Connexion à Cassandra...")
     
-    app = GestionNotes()
+    app = GestioenNots()
     
     if app.session:
         print("✅ Connexion réussie!")
