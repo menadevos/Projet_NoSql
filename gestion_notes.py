@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# gestion_notes_elegant.py
+# gestion_notes.py
 
 import tkinter as tk
 from tkinter import ttk, messagebox
