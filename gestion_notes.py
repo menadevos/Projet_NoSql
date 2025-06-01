@@ -875,7 +875,7 @@ if __name__ == "__main__":
     
     if app.session:
         print("✅ Connexion réussie!")
-        print("🎨 Lancement de l'interface graphique élégante...")
+        print("🎨 Lancement de l'interface graphique ...")
         app.run()
     else:
         print("❌ Impossible de démarrer l'application - Problème de connexion à Cassandra")
