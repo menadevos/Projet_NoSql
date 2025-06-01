@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from cassandra.cluster import Cluster
 from uuid import uuid1
-
-
+from cours import CoursService
+from cassandra_connexion import CassandraConnection
 def create_interface_cours(parent):
     container = tk.Frame(parent)
     manager = CourseManager(container)
     container.pack(fill="both", expand=True)
     return container
+
 
 
 class CourseManager:
@@ -34,14 +35,17 @@ class CourseManager:
             self.root.configure(bg=self.colors['vanilla_ice'])
 
         try:
-            self.cluster = Cluster(['127.0.0.1'])
-            self.session = self.cluster.connect()
-            self.setup_database()
+               connexion = CassandraConnection()
+               self.session = connexion.get_session()
+
+               if not self.session:
+                  raise Exception("Session Cassandra introuvable.")
+               self.service = CoursService(self.session)
         except Exception as e:
             messagebox.showerror("Erreur de connexion",
                                  f"Impossible de se connecter à Cassandra: {str(e)}\n"
                                  "Assurez-vous que Cassandra est démarré.")
-            self.cluster = None
+            
             self.session = None
 
         self.style_buttons()
@@ -90,22 +94,7 @@ class CourseManager:
                         background=self.colors['cosmic'],
                         foreground="white")
 
-    def setup_database(self):
-        if self.session is None:
-            return
-        self.session.execute("""
-            CREATE KEYSPACE IF NOT EXISTS gestion_etudiants 
-            WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
-        """)
-        self.session.set_keyspace('gestion_etudiants')
-        self.session.execute("""
-            CREATE TABLE IF NOT EXISTS cours (
-                id UUID PRIMARY KEY,
-                nom TEXT,
-                enseignant TEXT
-            )
-        """)
-
+ 
     def setup_ui(self):
         header_frame = tk.Frame(self.cours_frame, bg=self.colors['vanilla_ice'])
         header_frame.pack(fill='x', pady=(15, 5), padx=15)
@@ -143,12 +132,8 @@ class CourseManager:
         self.form_frame.pack_forget()
         self.cours_frame.pack(fill="both", expand=True)
 
-        if self.session is None:
-            messagebox.showerror("Erreur", "Aucune connexion à la base de données disponible.")
-            return
-
         try:
-            rows = list(self.session.execute("SELECT id, nom, enseignant FROM cours"))
+            rows = self.service.get_all_cours()
             for item in self.tree.get_children():
                 self.tree.delete(item)
             if not rows:
@@ -160,6 +145,8 @@ class CourseManager:
                 self.tree.insert("", "end", values=(short_id, row.nom, row.enseignant), tags=(tag,))
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la récupération des cours: {str(e)}")
+
+
 
     def build_formulaire(self):
         for widget in self.form_frame.winfo_children():
@@ -209,10 +196,6 @@ class CourseManager:
         self.cours_frame.pack(fill="both", expand=True)
 
     def ajouter_cours(self):
-        if self.session is None:
-            messagebox.showerror("Erreur", "Aucune connexion à la base de données disponible.")
-            return
-
         nom = self.entry_nom.get().strip()
         enseignant = self.entry_ens.get().strip()
 
@@ -221,15 +204,12 @@ class CourseManager:
             return
 
         try:
-            new_id = uuid1()
-            self.session.execute(
-                "INSERT INTO cours (id, nom, enseignant) VALUES (%s, %s, %s)",
-                (new_id, nom, enseignant)
-            )
+            self.service.ajouter_cours(nom, enseignant)
             messagebox.showinfo("Succès", "Cours ajouté avec succès.")
             self.afficher_cours_direct()
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de l’ajout du cours : {str(e)}")
+
 
 
 if __name__ == "__main__":

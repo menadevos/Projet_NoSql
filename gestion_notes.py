@@ -6,6 +6,7 @@ from tkinter import ttk, messagebox
 from cassandra.cluster import Cluster
 import uuid
 from datetime import datetime
+from cassandra_connexion import CassandraConnection
 
 def create_note_interface(parent):
     """Crée et retourne l'interface de gestion des cours intégrée dans le parent donné"""
@@ -24,8 +25,13 @@ def create_note_interface(parent):
 
 class GestioenNots:
     def __init__(self, parent=None):
-        self.session = self.get_session()
-        
+        connexion = CassandraConnection()
+        self.session = connexion.get_session()
+        # Vérification de la session Cassandra
+        if not self.session:
+            messagebox.showerror("Erreur", "Impossible de se connecter à Cassandra")
+            if parent is None:  # Si c'est une application standalone
+                raise SystemExit("Erreur de connexion à Cassandra")
         if parent is not None:
             self.root = parent
             self.is_embedded = True
