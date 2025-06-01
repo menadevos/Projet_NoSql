@@ -4,8 +4,27 @@ from cassandra.cluster import Cluster
 from uuid import uuid1
 import subprocess
 
+
+def create_interface_cours(parent):
+    """Crée et retourne l'interface de gestion des cours intégrée dans le parent donné"""
+    # On crée un conteneur Frame qui va accueillir le CourseManager
+    container = tk.Frame(parent)
+    
+    # On adapte le CourseManager pour qu'il utilise ce container comme racine
+    # plutôt que de créer sa propre fenêtre Tk()
+    manager = CourseManager(container)  # On passe le container comme racine
+    
+    # On s'assure que le manager remplit tout l'espace disponible
+    container.pack(fill="both", expand=True)
+    
+    return container
+
+
 class CourseManager:
     def __init__(self, root):
+        # CORRECTION: Assigner self.root en premier
+        self.root = root
+        
         self.colors = {
             'vanilla_ice': '#F8F6F0',      # Fond principal
             'cosmic': '#2E1065',           # Bleu violet foncé
@@ -20,16 +39,24 @@ class CourseManager:
             'danger': '#EF4444'            # Rouge danger
         }
 
-        self.root = root
-        self.root.title("Gestion des Cours")
-        self.root.geometry("600x400")
-        self.root.configure(bg=self.colors['vanilla_ice'])
+        if isinstance(self.root, (tk.Tk, tk.Toplevel)):
+            self.root.title("Gestion des Cours")
+            self.root.geometry("600x400")
+            self.root.configure(bg=self.colors['vanilla_ice'])
 
-        # Connexion à Cassandra
-        self.cluster = Cluster(['127.0.0.1'])
-        self.session = self.cluster.connect()
-
-        self.setup_database()
+        # Connexion à Cassandra avec gestion d'erreur
+        try:
+            self.cluster = Cluster(['127.0.0.1'])
+            self.session = self.cluster.connect()
+            self.setup_database()
+        except Exception as e:
+            messagebox.showerror("Erreur de connexion", 
+                               f"Impossible de se connecter à Cassandra: {str(e)}\n"
+                               "Assurez-vous que Cassandra est démarré.")
+            # Initialiser des valeurs par défaut pour éviter les erreurs
+            self.cluster = None
+            self.session = None
+        
         self.style_buttons()
         self.setup_ui()
 
@@ -72,18 +99,24 @@ class CourseManager:
                         arrowcolor=self.colors['grape'])
 
     def setup_database(self):
-        self.session.execute("""
-            CREATE KEYSPACE IF NOT EXISTS gestion_etudiants 
-            WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
-        """)
-        self.session.set_keyspace('gestion_etudiants')
-        self.session.execute("""
-            CREATE TABLE IF NOT EXISTS cours (
-                id UUID PRIMARY KEY,
-                nom TEXT,
-                enseignant TEXT
-            )
-        """)
+        if self.session is None:
+            return
+        try:
+            self.session.execute("""
+                CREATE KEYSPACE IF NOT EXISTS gestion_etudiants 
+                WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
+            """)
+            self.session.set_keyspace('gestion_etudiants')
+            self.session.execute("""
+                CREATE TABLE IF NOT EXISTS cours (
+                    id UUID PRIMARY KEY,
+                    nom TEXT,
+                    enseignant TEXT
+                )
+            """)
+        except Exception as e:
+            messagebox.showerror("Erreur de base de données", 
+                               f"Erreur lors de la configuration de la base de données: {str(e)}")
 
     def setup_ui(self):
         title = tk.Label(self.root, text="Gestion des Cours", 
@@ -125,6 +158,10 @@ class CourseManager:
         mandatory_label.pack(pady=5)
 
     def ajouter_cours(self):
+        if self.session is None:
+            messagebox.showerror("Erreur", "Aucune connexion à la base de données disponible.")
+            return
+            
         nom = self.entry_nom.get().strip()
         enseignant = self.entry_ens.get().strip()
 
@@ -145,6 +182,10 @@ class CourseManager:
             messagebox.showerror("Erreur", "Erreur lors de l'ajout du cours: " + str(e))
 
     def afficher_cours(self):
+        if self.session is None:
+            messagebox.showerror("Erreur", "Aucune connexion à la base de données disponible.")
+            return
+            
         try:
             query = "SELECT id, nom, enseignant FROM cours"
             rows = list(self.session.execute(query))
@@ -187,12 +228,21 @@ class CourseManager:
             messagebox.showerror("Erreur", "Erreur lors de la récupération des cours: " + str(e))
 
     def retour_main_interface(self):
-        self.root.destroy()
-        subprocess.Popen(["python", "main_interface.py"])
+        # Au lieu de détruire et relancer, on peut simplement signaler au parent
+        # qu'on veut revenir au menu principal
+        # Cette fonction sera remplacée par la fonction du parent si nécessaire
+        if hasattr(self, 'parent_callback') and self.parent_callback:
+            self.parent_callback()
+        else:
+            # Fallback: fermer la fenêtre actuelle si c'est une fenêtre indépendante
+            if isinstance(self.root, (tk.Tk, tk.Toplevel)):
+                self.root.destroy()
+                subprocess.Popen(["python", "main_interface.py"])
 
     def __del__(self):
         if hasattr(self, 'cluster'):
             self.cluster.shutdown()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
