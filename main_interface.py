@@ -201,7 +201,7 @@ def lancer_ui():
             ("Gestion des cours", "cours.png", ouvrir_interface_1),
             ("Gestion des notes", "notes.png", ouvrir_interface_2),
             ("Gestion des étudiants", "students.png", ouvrir_interface_3),
-            ("Statistiques", "stats.png", ouvrir_interface_4), 
+           
         ]
 
         # Chargement images icônes (doivent être dans le dossier)
