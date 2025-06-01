@@ -1,17 +1,15 @@
 # cassandra_connexion.py
-# database.py
 from cassandra.cluster import Cluster
-from cassandra.query import SimpleStatement#Pour exécuter des requêtes CQL simple
+from cassandra.query import SimpleStatement
 import threading
 
-
 class CassandraConnection:
-    _instance = None #pattern Singleton
-    _lock = threading.Lock() # Pour assurer la sécurité des threads
+    _instance = None
+    _lock = threading.Lock()
 
-    def __new__(cls): #cls = la classe elle-même
-        if not cls._instance: # Vérifie si une instance existe déjà
-            with cls._lock:  # Assure que la création de l'instance est thread-safe
+    def __new__(cls):
+        if not cls._instance:
+            with cls._lock:
                 if not cls._instance:
                     cls._instance = super(CassandraConnection, cls).__new__(cls)
                     cls._instance._init_connection()
@@ -20,15 +18,9 @@ class CassandraConnection:
     def _init_connection(self):
         try:
             self.cluster = Cluster(['127.0.0.1'])
-             # Créer d'abord la session sans keyspace spécifique
             self.session = self.cluster.connect()
-        
-        # Maintenant qu'on a une session, créer le keyspace et les tables
             self._create_keyspace_and_tables()
-        
-        # Se connecter au keyspace après sa création
             self.session.set_keyspace('gestion_etudiants')
-            
         except Exception as e:
             print(f"[Erreur Cassandra] {e}")
             self.cluster = None
@@ -69,3 +61,13 @@ class CassandraConnection:
 
     def get_session(self):
         return self.session
+
+def get_session():
+    try:
+        connection = CassandraConnection()
+        session = connection.get_session()
+        if session is None:
+            raise Exception("Cassandra session is not initialized")
+        return session
+    except Exception as e:
+        raise Exception(f"Erreur lors de la connexion à Cassandra: {str(e)}")
