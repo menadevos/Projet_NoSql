@@ -2,27 +2,121 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
+def ouvrir_gestion_etudiants():
+    messagebox.showinfo("Gestion Étudiants", "Ouverture gestion des étudiants...")
+
+def ouvrir_gestion_cours():
+    messagebox.showinfo("Gestion Cours", "Ouverture gestion des cours...")
+
+def ouvrir_gestion_notes():
+    messagebox.showinfo("Gestion Notes", "Ouverture gestion des notes...")
+
 def lancer_ui():
     root = tk.Tk()
     root.title("Application Gestion Étudiants")
     root.geometry("900x600")
-    root.configure(bg="#F5F7FA")  # couleur de fond claire
+    root.configure(bg="#F5F7FA")
 
     # ===== NAVBAR =====
-    navbar = tk.Frame(root, bg="#000000", height=60)
+    navbar = tk.Frame(root, bg="#2E1065", height=40)
     navbar.pack(fill="x")
 
-    # Logo à gauche dans la navbar
-    logo_img = Image.open("logo-white.png")  # mets ton chemin exact ici si différent
-    logo_img = logo_img.resize((40, 40))
+    logo_img = Image.open("logo-white.png").resize((100, 50))
     logo_photo = ImageTk.PhotoImage(logo_img)
-    logo_label = tk.Label(navbar, image=logo_photo, bg="#000000")
+    logo_label = tk.Label(navbar, image=logo_photo, bg="#2E1065")
     logo_label.image = logo_photo
-    logo_label.pack(side="left", padx=20, pady=10)
+    logo_label.pack(side="left", padx=50, pady=10)
+
+    right_frame = tk.Frame(navbar, bg="#2E1065")
+    right_frame.pack(side="right", padx=30)
+
+    phone_icon_img = Image.open("phone.png").resize((30, 20))
+    phone_icon = ImageTk.PhotoImage(phone_icon_img)
+    phone_label_icon = tk.Label(right_frame, image=phone_icon, bg="#2E1065")
+    phone_label_icon.image = phone_icon
+    phone_label_icon.pack(side="left", padx=(0, 5))
+
+    phone_label = tk.Label(
+        right_frame, text="+212 6 00 00 00 00", fg="white", bg="#2E1065",
+        font=("Arial", 11, "bold"), cursor="hand2"
+    )
+    phone_label.pack(side="left", padx=(0, 25))
+
+    email_icon_img = Image.open("email.png").resize((30, 20))
+    email_icon = ImageTk.PhotoImage(email_icon_img)
+    email_label_icon = tk.Label(right_frame, image=email_icon, bg="#2E1065")
+    email_label_icon.image = email_icon
+    email_label_icon.pack(side="left", padx=(0, 5))
+
+    email_label = tk.Label(
+        right_frame, text="contact@exemple.com", fg="white", bg="#2E1065",
+        font=("Arial", 11, "bold"), cursor="hand2"
+    )
+    email_label.pack(side="left")
+
+    def on_enter_email(e): email_label.config(fg="#FED600")
+    def on_leave_email(e): email_label.config(fg="white")
+    def on_enter_phone(e): phone_label.config(fg="#FED600")
+    def on_leave_phone(e): phone_label.config(fg="white")
+
+    email_label.bind("<Enter>", on_enter_email)
+    email_label.bind("<Leave>", on_leave_email)
+    phone_label.bind("<Enter>", on_enter_phone)
+    phone_label.bind("<Leave>", on_leave_phone)
+
+    # ===== LAYOUT PRINCIPAL =====
+    layout_frame = tk.Frame(root, bg="#F5F7FA")
+    layout_frame.pack(fill="both", expand=True)
+
+    # ===== SIDEBAR =====
+    sidebar = tk.Frame(layout_frame, bg="#2E1065", width=250)
+    sidebar.pack(side="left", fill="y")
+
+    sidebar_title = tk.Label(
+        sidebar, bg="#2E1065", fg="white",
+        font=("Helvetica", 16, "bold")
+    )
+    sidebar_title.pack(pady=20)
+
+    # Fonction pour hover effect
+    def on_enter_btn(e):
+        e.widget.config(bg="#3F1A82")
+
+    def on_leave_btn(e):
+        e.widget.config(bg="#4B3C88")
+
+    # Style des boutons
+    btn_style = {
+        "font": ("Helvetica", 14, "bold"),
+        "bg": "#4B3C88",
+        "fg": "white",
+        "activebackground": "#3F1A82",
+        "activeforeground": "white",
+        "relief": "flat",
+        "bd": 0,
+        "width": 25,
+        "height": 3,
+        "cursor": "hand2"
+    }
+
+    btn1 = tk.Button(sidebar, text="👨‍🎓 Gestion des Étudiants", command=ouvrir_gestion_etudiants, **btn_style)
+    btn1.pack(pady=10)
+    btn1.bind("<Enter>", on_enter_btn)
+    btn1.bind("<Leave>", on_leave_btn)
+
+    btn2 = tk.Button(sidebar, text="📘 Gestion des Cours", command=ouvrir_gestion_cours, **btn_style)
+    btn2.pack(pady=10)
+    btn2.bind("<Enter>", on_enter_btn)
+    btn2.bind("<Leave>", on_leave_btn)
+
+    btn3 = tk.Button(sidebar, text="📝 Gestion des Notes", command=ouvrir_gestion_notes, **btn_style)
+    btn3.pack(pady=10)
+    btn3.bind("<Enter>", on_enter_btn)
+    btn3.bind("<Leave>", on_leave_btn)
 
     # ===== CONTENU PRINCIPAL =====
-    frame_contenu = tk.Frame(root, bg="#F5F7FA")
-    frame_contenu.pack(expand=True)
+    frame_contenu = tk.Frame(layout_frame, bg="#F5F7FA")
+    frame_contenu.pack(side="left", fill="both", expand=True)
 
     titre = tk.Label(
         frame_contenu,
@@ -33,93 +127,7 @@ def lancer_ui():
     )
     titre.pack(pady=30)
 
-    # Style commun des boutons
-    style_btn = {
-        "font": ("Helvetica", 16, "bold"),
-        "width": 30,
-        "height": 2,
-        "bg": "#2980B9",
-        "fg": "white",
-        "activebackground": "#1F618D",
-        "bd": 0,
-        "relief": "flat",
-        "cursor": "hand2"
-    }
-
-    btn1 = tk.Button(frame_contenu, text="👨‍🎓 Gestion des Étudiants", **style_btn, command=ouvrir_gestion_etudiants)
-    btn2 = tk.Button(frame_contenu, text="📘 Gestion des Cours", **style_btn, command=ouvrir_gestion_cours)
-    btn3 = tk.Button(frame_contenu, text="📝 Gestion des Notes", **style_btn, command=ouvrir_gestion_notes)
-
-    btn1.pack(pady=15)
-    btn2.pack(pady=15)
-    btn3.pack(pady=15)
-
-    # ===== FOOTER =====
-    # ===== FOOTER =====
-    footer = tk.Frame(root, bg="#2C3E50", height=120)
-    footer.pack(fill="x", side="bottom")
-
-    # 3 colonnes dans le footer
-    colonne1 = tk.Frame(footer, bg="#2C3E50")
-    colonne2 = tk.Frame(footer, bg="#2C3E50")
-    colonne3 = tk.Frame(footer, bg="#2C3E50")
-
-    colonne1.pack(side="left", expand=True, padx=30, pady=20)
-    colonne2.pack(side="left", expand=True, padx=30, pady=20)
-    colonne3.pack(side="left", expand=True, padx=30, pady=20)
-
-    # Colonne 1 : Logo + Nom
-    logo_img = Image.open("images.png")  # mets le logo dans le même dossier
-    logo_img = logo_img.resize((60, 60))
-    logo_photo = ImageTk.PhotoImage(logo_img)
-    logo_label = tk.Label(colonne1, image=logo_photo, bg="#2C3E50")
-    logo_label.image = logo_photo
-    logo_label.pack()
-
-    nom_faculte = tk.Label(colonne1, text="FST Tanger", font=("Helvetica", 14, "bold"), fg="white", bg="#2C3E50")
-    nom_faculte.pack()
-
-    # Colonne 2 : Contact
-    contact_title = tk.Label(colonne2, text="CONTACT", font=("Helvetica", 12, "bold"), fg="white", bg="#2C3E50")
-    contact_title.pack(anchor="w")
-
-    contact_email = tk.Label(colonne2, text="contact@fstt.ma", fg="white", bg="#2C3E50", font=("Helvetica", 10))
-    contact_email.pack(anchor="w", pady=2)
-
-    contact_tel = tk.Label(colonne2, text="+212 5 39 39 39 39", fg="white", bg="#2C3E50", font=("Helvetica", 10))
-    contact_tel.pack(anchor="w")
-
-    # Colonne 3 : Liens importants
-    liens_title = tk.Label(colonne3, text="LIENS UTILES", font=("Helvetica", 12, "bold"), fg="white", bg="#2C3E50")
-    liens_title.pack(anchor="w")
-
-    lien1 = tk.Label(colonne3, text="🏠 Accueil", fg="white", bg="#2C3E50", font=("Helvetica", 10), cursor="hand2")
-    lien1.pack(anchor="w", pady=2)
-
-    lien2 = tk.Label(colonne3, text="👨‍🎓 Gestion Étudiants", fg="white", bg="#2C3E50", font=("Helvetica", 10), cursor="hand2")
-    lien2.pack(anchor="w", pady=2)
-
-    lien3 = tk.Label(colonne3, text="📘 Gestion Cours", fg="white", bg="#2C3E50", font=("Helvetica", 10), cursor="hand2")
-    lien3.pack(anchor="w", pady=2)
-
-    lien4 = tk.Label(colonne3, text="📝 Gestion Notes", fg="white", bg="#2C3E50", font=("Helvetica", 10), cursor="hand2")
-    lien4.pack(anchor="w", pady=2)
-
-
     root.mainloop()
-
-
-# Fonctions pour boutons (placeholder pour maintenant)
-def ouvrir_gestion_etudiants():
-    messagebox.showinfo("Gestion Étudiants", "Ouverture gestion des étudiants...")
-
-def ouvrir_gestion_cours():
-    messagebox.showinfo("Gestion Cours", "Ouverture gestion des cours...")
-
-def ouvrir_gestion_notes():
-    messagebox.showinfo("Gestion Notes", "Ouverture gestion des notes...")
-
-
 
 if __name__ == "__main__":
     lancer_ui()
