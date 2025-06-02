@@ -412,7 +412,7 @@ def demarrer_interface(parent=None):
 
     def rechercher_etudiants():
         filter_text = search_entry.get().strip()
-        afficher_etudiants(filter_text)
+        afficher_etudiants(filter_text) # Pass the filter text to the afficher_etudiants function
 
     def clear_search():
         search_entry.delete(0, tk.END)
